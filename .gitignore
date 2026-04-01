@@ -1,0 +1,34 @@
+# Cache folder
+cache/
+*.mp4
+*.webm
+*.mkv
+*.txt
+
+# Database
+*.db
+instance/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Selenium
+selenium-profile-*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+cookies.txt
