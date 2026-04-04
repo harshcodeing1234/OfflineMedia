@@ -1,243 +1,338 @@
 # OfflineMedia
 
-A Flask-based web application that scrapes short-form videos from Instagram, YouTube, and Facebook, then provides a TikTok-like interface for viewing and interacting with the content.
+A powerful web application that scrapes short-form videos from Instagram, YouTube, and Facebook, and presents them in a TikTok-style interface with advanced features like watch history, duplicate detection, and smart recommendations.
+
+---
+
+## Table of Contents
+- [Problem Statement](#problem-statement)
+- [Solution](#solution)
+- [Technology Stack](#technology-stack)
+- [Features](#features)
+- [Desktop Setup](#desktop-setup)
+
+---
+
+## Problem Statement
+
+In today's digital age, users face several challenges with social media content:
+
+1. **Content Overload** - Difficult to find relevant content across multiple platforms
+2. **No Offline Access** - Can't watch reels/shorts without internet connection
+3. **Scattered Content** - Videos spread across Instagram, YouTube, and Facebook
+4. **No Personalization** - Limited control over content curation
+5. **Duplicate Content** - Same videos appear multiple times across platforms
+6. **No Watch History** - Can't track what you've already watched
+
+---
+
+## Solution
+
+**OfflineMedia** solves these problems by:
+
+- **Automated Scraping** - Fetches videos from multiple platforms based on hashtags
+- **Unified Interface** - Instagram style vertical feed for all videos
+- **Smart Filtering** - Automatically skips already-watched videos
+- **Offline Viewing** - Cache reels/shorts for offline access
+- **Watch History** - Permanent tracking of watched content
+- **Duplicate Prevention** - Intelligent detection to avoid re-downloading
+- **TTL Management** - Automatic cleanup of expired content
+- **Social Features** - Like, comment, and save videos
+
+---
+
+## Technology Stack
+
+### **Backend**
+- **Python 3.x** - Core programming language
+- **Flask** - Web framework
+- **SQLAlchemy** - ORM for database operations
+- **SQLite** - Database (WAL mode for concurrency)
+- **yt-dlp** - Video downloading library
+- **Flask-Login** - User authentication
+
+### **Frontend**
+- **HTML5** - Structure
+- **CSS3** - Styling (Glassmorphism design)
+- **JavaScript (Vanilla)** - Interactivity
+- **Responsive Design** - Mobile-first approach
+
+### **Scraping**
+- **yt-dlp** - Multi-platform video extraction
+- **Cookies Authentication** - Instagram login support
+- **ThreadPoolExecutor** - Concurrent downloads (10 workers)
+
+### **Database Schema**
+- **User** - Authentication & profiles
+- **Scrape** - Scraping sessions
+- **Video** - Downloaded videos metadata
+- **WatchHistory** - Permanent watch tracking
+- **Like/Comment** - Social interactions
+- **SavedVideo** - Bookmarks
+
+---
 
 ## Features
 
-### Core Functionality
-- **Multi-Platform Scraping**: Automated scraping from Instagram Reels, YouTube Shorts, and Facebook Reels
-- **Video Management**: Download, cache, and organize videos with TTL-based expiration
-- **Interactive Player**: TikTok-style video player with swipe navigation
-- **Social Features**: Like videos, comment, and interact with content
-- **User Authentication**: Secure login/registration system with session management
+### **Video Management**
+- Multi-platform scraping (Instagram, YouTube, Facebook)
+- Hashtag-based content discovery
+- Automatic duplicate detection
+- Watch history filtering
+- TTL-based content expiration
+- Bulk video downloads
 
-### Technical Features
-- Concurrent video downloads with thread pool executor
-- Selenium-based web scraping with anti-detection measures
-- yt-dlp integration for reliable video downloads
-- SQLite database with SQLAlchemy ORM
-- Automatic cleanup of expired content
-- Cookie-based authentication for Instagram scraping
+### **User Interface**
+- Instagram style vertical feed
+- YouTube Shorts-style horizontal rows
+- Swipe navigation (up/down)
+- Double tap to like
+- Long press for 2x speed
+- Auto-play previews
+- Smooth animations
 
-## Project Structure
+### **Smart Features**
+- Continue watching section
+- Unwatched videos prioritized
+- Skip already-watched content during scraping
+- Sequential preview playback
+- Real-time progress tracking
 
-```
-project/
-├── app.py              # Flask application & API routes
-├── agent.py            # Selenium scraping agents for each platform
-├── scraper.py          # Video download & scraping orchestration
-├── models.py           # Database models (User, Scrape, Video, Comment, Like)
-├── database.py         # Database initialization & migrations
-├── config.py           # Configuration settings
-├── utils.py            # Utility functions for error handling
-├── migrate_db.py       # Database migration script
-├── requirements.txt    # Python dependencies
-├── cookies.txt         # Instagram session cookies (auto-generated)
-├── cache/              # Downloaded video storage
-├── instance/           # SQLite database
-└── templates/          # HTML templates
-    ├── auth.html       # Login/registration page
-    ├── dashboard.html  # Main dashboard
-    ├── scrapp.html     # Scraping interface
-    ├── play.html       # Video player
-    └── polling.html    # Scraping status monitor
-```
+### **Social Features**
+- Like videos
+- Comment system
+- Save/bookmark videos
+- Share functionality
+- User profiles with avatars
 
-## Installation
+### **Dashboard**
+- Statistics (videos, scraps, cache size, likes)
+- Recent scraps list
+- Multiple reels rows
+- Continue watching section
+- Profile settings
 
-### Prerequisites
-- Python 3.8+
-- Chrome browser
-- ChromeDriver (compatible with your Chrome version)
+### **Scraping Control**
+- Platform selection (Instagram/YouTube/Facebook/All)
+- Custom hashtags per platform
+- Duration control (minutes)
+- Quantity limits
+- TTL configuration (hours)
+- Stop/Resume functionality
+- Live logs streaming
 
-### Setup
+### **Mobile Optimized**
+- Bottom navigation bar
+- Touch gestures
+- Profile menu with History
+- Responsive design
+- PWA-ready
 
-1. Clone the repository:
+### **Security**
+- User authentication
+- Password hashing (Werkzeug)
+- Session management (365 days)
+- User-specific content isolation
+
+---
+
+## Desktop Setup
+
+### **Prerequisites**
+- Python 3.8 or higher
+- pip (Python package manager)
+- Git
+
+### **Installation Steps**
+
+1. **Clone the repository**
 ```bash
 git clone <repository-url>
-cd project
+cd "landing page"
 ```
 
-2. Install dependencies:
+2. **Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Configure settings in `config.py`:
+3. **Create cache folder**
+```bash
+mkdir cache
+```
+
+4. **Configure settings** (Optional)
+Edit `config.py` to customize:
 ```python
 SERVER_URL = "http://127.0.0.1:5000"
+SERVER_PORT = 5000
 CACHE_FOLDER = "cache"
 THREAD_POOL_WORKERS = 10
 ```
 
-4. Initialize the database:
-```bash
-python migrate_db.py
-```
+5. **Setup Instagram cookies** (Optional - for Instagram scraping)
+- Login to Instagram in your browser
+- Export cookies using a browser extension
+- Save as `cookies.txt` in the project root
 
-5. Run the application:
+6. **Run the application**
 ```bash
 python app.py
 ```
 
-The app will be available at `http://localhost:5000`
-
-## Usage
-
-### Web Interface
-
-1. **Register/Login**: Create an account or login at `/auth`
-2. **Start Scraping**: Navigate to `/scrapp` to configure and start a scraping session
-   - Set duration (minutes to scrape)
-   - Set TTL (hours before videos expire)
-3. **Monitor Progress**: View scraping status at `/polling`
-4. **Watch Videos**: Browse and watch scraped videos at `/play`
-5. **Dashboard**: View statistics and manage scrapes at `/dashboard`
-
-### Standalone Scraping
-
-Run the agent directly for command-line scraping:
-
-```bash
-python agent.py
+7. **Access the application**
+Open your browser and navigate to:
+```
+http://127.0.0.1:5000
 ```
 
-You'll be prompted for:
-- Scraping duration (minutes)
-- TTL (hours)
+### **First Time Setup**
 
-### API Endpoints
+1. **Register an account**
+   - Click "Sign Up"
+   - Enter username, email, and password
+   - Submit
 
-#### Authentication
-- `POST /api/login` - User login
-- `POST /api/register` - User registration
-- `GET /logout` - Logout
+2. **Create your first scrape**
+   - Go to Dashboard
+   - Click the "+" button
+   - Select platforms
+   - Enter hashtags (e.g., "funny", "travel")
+   - Set duration (minutes) and quantity
+   - Set TTL (hours)
+   - Click "Create Scrapp"
 
-#### Scraping
-- `POST /api/scrape` - Start new scraping session
-- `GET /api/scrapes` - List all scrapes
-- `GET /api/scraping-status` - Check if scraping is active
-- `POST /api/scrape/<id>/stop` - Stop scraping
-- `DELETE /api/scrape/<id>/delete` - Delete scrape and videos
+3. **Watch videos**
+   - Go to "Play" section
+   - Swipe up/down to navigate
+   - Double tap to like
+   - Long press for 2x speed
+   - Click comment icon to add comments
 
-#### Videos
-- `GET /api/videos` - List all videos
-- `GET /cache/<filename>` - Stream video file
-- `POST /api/video/<filename>/like` - Like/unlike video
-- `POST /api/video/<filename>/comment` - Add comment
-- `GET /api/video/<filename>/comments` - Get comments
+### **Project Structure**
+```
+landing page/
+├── app.py                 # Main Flask application
+├── models.py              # Database models
+├── database.py            # Database initialization
+├── scraper.py             # Scraping logic
+├── agent.py               # Platform-specific scrapers
+├── config.py              # Configuration
+├── utils.py               # Helper functions
+├── requirements.txt       # Python dependencies
+├── cookies.txt            # Instagram cookies (optional)
+├── cache/                 # Downloaded videos
+├── instance/              # SQLite database
+└── templates/             # HTML templates
+    ├── auth.html          # Login/Register
+    ├── dashboard.html     # Dashboard
+    ├── play.html          # Video player
+    ├── saved.html         # Saved videos
+    ├── history.html       # Watch history
+    ├── scrapp.html        # Scrape management
+    └── polling.html       # Real-time monitoring
+```
 
-#### User
-- `GET /api/user` - Get current user info
-- `POST /api/user/update` - Update user profile
-- `GET /api/stats` - Get user statistics
+### **Configuration Options**
 
-## Database Schema
+**Environment Variables** (Optional):
+```bash
+export SECRET_KEY="your-secret-key"
+export SERVER_PORT=5000
+```
 
-### User
-- id, username, email, name, phone, avatar, password, created_at
+**Database:**
+- Location: `instance/app.db`
+- Type: SQLite with WAL mode
+- Backup: Copy `instance/app.db` regularly
 
-### Scrape
-- id, user_id, duration, ttl, status, progress, total_videos, downloaded_videos
-- created_at, started_at, expires_at, logs
+**Cache Management:**
+- Videos stored in `cache/` folder
+- Automatic cleanup based on TTL
+- Manual cleanup: Delete files from `cache/`
 
-### Video
-- id, scrape_id, platform, url, filename, status, likes
-- created_at, expires_at
+### **Troubleshooting**
 
-### Comment
-- id, video_id, filename, user_id, text, created_at
-
-### Like
-- id, video_id, filename, user_id, created_at
-
-## Configuration
-
-### Scraping Settings
-- `MAX_VIDEOS_PER_PLATFORM`: Maximum videos to scrape per platform (default: 100)
-- `THREAD_POOL_WORKERS`: Concurrent download threads (default: 10)
-- `PAGE_LOAD_TIMEOUT`: Selenium page load timeout (default: 45s)
-
-### Download Settings
-- `CACHE_FOLDER`: Video storage directory (default: "cache")
-- `CLEANUP_INTERVAL_SECONDS`: Expired content cleanup interval (default: 300s)
-
-## How It Works
-
-### Scraping Process
-1. User initiates scrape with duration and TTL
-2. Agent launches Selenium browsers for each platform sequentially
-3. Instagram: Scrolls explore page, collects reel links
-4. YouTube: Navigates shorts, captures URLs
-5. Facebook: Scrolls watch page, extracts video links
-6. Links saved to database with status tracking
-
-### Download Process
-1. Videos queued for download via thread pool
-2. yt-dlp downloads each video with retry logic
-3. Files saved to cache with platform prefix
-4. Database updated with filename and status
-5. Progress tracked in real-time
-
-### Expiration & Cleanup
-1. Background thread runs every 5 minutes
-2. Checks for expired videos based on TTL
-3. Deletes files from cache
-4. Removes database records
-5. Cascades to associated comments and likes
-
-## Security Features
-
-- Password hashing with Werkzeug
-- Flask-Login session management
-- User ownership validation on all operations
-- SQL injection protection via SQLAlchemy ORM
-- CSRF protection on state-changing operations
-
-## Performance Optimizations
-
-- Connection pooling for database (pool_size: 20)
-- Concurrent fragment downloads in yt-dlp
-- Thread pool for parallel video downloads
-- Lazy loading of relationships
-- Indexed database queries on filename
-
-## Troubleshooting
-
-### Instagram Login Required
-If Instagram scraping fails, run `agent.py` standalone first to login manually. Cookies will be saved for future use.
-
-### ChromeDriver Issues
-Ensure ChromeDriver version matches your Chrome browser version. Download from: https://chromedriver.chromium.org/
-
-### Download Failures
+**Issue: Videos not downloading**
 - Check internet connection
-- Verify yt-dlp is up to date: `pip install -U yt-dlp`
-- Some videos may be geo-restricted or require authentication
+- Verify cookies.txt for Instagram
+- Check logs in scrape details
 
-### Database Errors
-Run migrations to ensure schema is up to date:
-```bash
-python migrate_db.py
-```
+**Issue: Database locked**
+- Close other instances of the app
+- Check `instance/app.db-wal` file
 
-## Dependencies
+**Issue: Port already in use**
+- Change `SERVER_PORT` in `config.py`
+- Or kill the process using port 5000
 
-- **Flask**: Web framework
-- **Flask-Login**: User session management
-- **Flask-SQLAlchemy**: Database ORM
-- **Selenium**: Web scraping automation
-- **yt-dlp**: Video downloading
-- **Werkzeug**: Security utilities
-- **Requests**: HTTP client
+### **Performance Tips**
+
+1. **Optimize thread pool**
+   - Increase `THREAD_POOL_WORKERS` for faster downloads
+   - Decrease for stability on slower systems
+
+2. **Manage storage**
+   - Set lower TTL values
+   - Regularly clean cache folder
+   - Monitor `cache/` folder size
+
+3. **Database maintenance**
+   - Vacuum database periodically:
+   ```bash
+   sqlite3 instance/app.db "VACUUM;"
+   ```
+
+---
+
+## Team & Contributions
+
+### **Development Team**
+
+**Harsh Kumar(OM-308) :- Backend Developer & System Architect**
+- Designed and implemented core scraping system (`scraper.py`)
+- Built platform-specific scrapers for Instagram, YouTube, Facebook (`agent.py`)
+- Configured application settings and optimization (`config.py`)
+- Developed database schema and migration system (`database.py`)
+- Created data models and relationships (`models.py`)
+- Implemented utility functions and error handling (`utils.py`)
+- Optimized duplicate detection and watch history filtering
+- Implemented TTL-based content management
+- Built concurrent download system with thread pooling
+
+**Key Contributions:**
+- Multi-platform video scraping architecture
+- Intelligent duplicate prevention system
+- Watch history tracking and filtering
+- Database optimization (WAL mode, indexing)
+- Error handling and retry mechanisms
+- TTL-based automatic cleanup
+- Sequential preview playback system
+
+#### Other Devloper team members info. are hidden 
+---
 
 ## License
 
-This project is for educational purposes only. Respect platform terms of service and copyright laws when scraping content.
+This project is for educational purposes only. Respect platform terms of service and copyright laws.
 
-## Notes
+---
 
-- Videos are temporary and expire based on configured TTL
-- Scraping requires active browser sessions (except YouTube/Facebook which run headless)
-- Instagram requires login cookies for reliable scraping
-- Download speed depends on network and platform rate limits
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+---
+
+## Contact
+
+For questions or support, please open an issue on GitHub.
+
+---
+
+**Made with by Amity(Patna) and IIT(Patna) Team**

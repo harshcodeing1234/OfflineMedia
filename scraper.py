@@ -28,10 +28,11 @@ def log_to_scrape(scrape, message, db):
         db.session.rollback()
     print(message)
 
-def run_scraper_session(scrape_id, duration, ttl, platforms, db, Video, Scrape, executor, download_video_func, CACHE_FOLDER):
+def run_scraper_session(scrape_id, duration, ttl, platforms, hashtags, quantity, db, Video, Scrape, executor, download_video_func, CACHE_FOLDER):
     """Run scraper in background with proper error handling"""
     try:
         from agent import scrape_instagram, scrape_youtube, scrape_facebook
+        from models import WatchHistory
         
         scrape = Scrape.query.get(scrape_id)
         if not scrape:
@@ -43,6 +44,10 @@ def run_scraper_session(scrape_id, duration, ttl, platforms, db, Video, Scrape, 
         scrape.expires_at = datetime.utcnow() + timedelta(hours=ttl)
         safe_commit(db)
         log_to_scrape(scrape, f"Scrape {scrape_id} started with platforms: {platforms}", db)
+        
+        # Get existing video URLs to avoid duplicates
+        existing_urls = set(v.url for v in Video.query.filter_by(scrape_id=scrape.user_id).all())
+        log_to_scrape(scrape, f"Found {len(existing_urls)} existing videos in database", db)
         
         # Parse platforms
         platform_map = {
@@ -62,6 +67,9 @@ def run_scraper_session(scrape_id, duration, ttl, platforms, db, Video, Scrape, 
         time_per_platform = duration / len(selected_platforms)
         results = {}
         
+        # Create stop flag file path
+        stop_flag = f"stop_{scrape_id}.flag"
+        
         for platform in selected_platforms:
             if platform not in platform_map:
                 continue
@@ -70,15 +78,42 @@ def run_scraper_session(scrape_id, duration, ttl, platforms, db, Video, Scrape, 
             scrape = Scrape.query.get(scrape_id)
             if scrape.status == 'stopped':
                 log_to_scrape(scrape, f"Scrape {scrape_id} stopped by user", db)
+                # Create stop flag file
+                open(stop_flag, 'w').close()
                 return
             
             try:
-                log_to_scrape(scrape, f"Starting {platform.title()} scraping ({time_per_platform:.1f} min)...", db)
-                results[platform] = platform_map[platform](time_per_platform)
-                log_to_scrape(scrape, f"{platform.title()}: {len(results[platform])} total", db)
+                platform_hashtags = hashtags.get(platform, [])
+                if isinstance(platform_hashtags, str):
+                    platform_hashtags = [platform_hashtags]
+                
+                if platform_hashtags:
+                    log_to_scrape(scrape, f"Starting {platform.title()} scraping with hashtags: {', '.join(['#' + h for h in platform_hashtags])} ({time_per_platform:.1f} min)...", db)
+                else:
+                    log_to_scrape(scrape, f"Starting {platform.title()} scraping ({time_per_platform:.1f} min)...", db)
+                
+                all_links = platform_map[platform](time_per_platform, platform_hashtags, quantity, stop_flag)
+                
+                # Filter out duplicates
+                new_links = [link for link in all_links if link not in existing_urls]
+                skipped = len(all_links) - len(new_links)
+                
+                results[platform] = new_links
+                
+                # Check if stopped during scraping
+                if os.path.exists(stop_flag):
+                    log_to_scrape(scrape, f"Scrape {scrape_id} stopped during {platform} scraping", db)
+                    os.remove(stop_flag)
+                    return
+                
+                log_to_scrape(scrape, f"{platform.title()}: {len(new_links)} new videos ({skipped} duplicates skipped)", db)
             except Exception as e:
                 log_to_scrape(scrape, f"{platform.title()} failed: {e}", db)
                 results[platform] = []
+        
+        # Clean up stop flag if exists
+        if os.path.exists(stop_flag):
+            os.remove(stop_flag)
         
         # Check if stopped
         scrape = Scrape.query.get(scrape_id)
@@ -166,6 +201,13 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             return
         
         try:
+            # Check again before starting download
+            scrape = Scrape.query.get(scrape_id)
+            if scrape.status == 'stopped':
+                video.status = 'stopped'
+                safe_commit(db)
+                return
+            
             log_to_scrape(scrape, f"⬇ Downloading: {video.platform} video {video_id}...", db)
             
             ydl_opts = {
@@ -189,6 +231,13 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             
             with YoutubeDL(ydl_opts) as ydl:
                 try:
+                    # Check one more time before actual download
+                    scrape = Scrape.query.get(scrape_id)
+                    if scrape.status == 'stopped':
+                        video.status = 'stopped'
+                        safe_commit(db)
+                        return
+                    
                     info = ydl.extract_info(url, download=True)
                     if not info:
                         raise Exception("No video info extracted")
@@ -203,13 +252,33 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             # Check for actual downloaded file (yt-dlp may change extension)
             actual_files = [f for f in os.listdir(CACHE_FOLDER) if f.startswith(f"{video.platform}_{video_id}")]
             if actual_files:
-                video.filename = actual_files[0]
-                video.status = 'ready'
-                scrape.downloaded_videos += 1
-                if scrape.total_videos > 0:
-                    scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
-                print(f"✓ Downloaded: {video.filename}")
-                log_to_scrape(scrape, f"✓ Downloaded: {video.filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
+                downloaded_filename = actual_files[0]
+                
+                # Check if this video is already in watch history
+                from models import WatchHistory
+                existing_history = WatchHistory.query.filter_by(
+                    user_id=scrape.user_id,
+                    filename=downloaded_filename
+                ).first()
+                
+                if existing_history:
+                    # Video already watched, delete and skip
+                    try:
+                        os.remove(os.path.join(CACHE_FOLDER, downloaded_filename))
+                        log_to_scrape(scrape, f"⊘ Skipped (already watched): {downloaded_filename}", db)
+                    except:
+                        pass
+                    video.status = 'skipped'
+                    db.session.delete(video)
+                else:
+                    # New video, keep it
+                    video.filename = downloaded_filename
+                    video.status = 'completed'
+                    scrape.downloaded_videos += 1
+                    if scrape.total_videos > 0:
+                        scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
+                    print(f"✓ Downloaded: {video.filename}")
+                    log_to_scrape(scrape, f"✓ Downloaded: {video.filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
             else:
                 video.status = 'failed'
                 print(f"✗ Failed: {url}")
@@ -250,9 +319,23 @@ def check_and_complete_scrape(scrape_id, db, Scrape):
     downloading = Video.query.filter_by(scrape_id=scrape_id, status='downloading').count()
     
     if downloading == 0:
+        # Count different statuses (exclude stopped videos)
+        completed = Video.query.filter_by(scrape_id=scrape_id, status='completed').count()
+        failed = Video.query.filter_by(scrape_id=scrape_id, status='failed').count()
+        already = Video.query.filter_by(scrape_id=scrape_id, status='already_downloaded').count()
+        skipped = Video.query.filter_by(scrape_id=scrape_id, status='skipped').count()
+        stopped = Video.query.filter_by(scrape_id=scrape_id, status='stopped').count()
+        
         scrape.status = 'completed'
         safe_commit(db)
-        log_to_scrape(scrape, f"All downloads completed! ({scrape.downloaded_videos}/{scrape.total_videos} successful)", db)
+        
+        msg = f"All downloads completed! ({completed}/{scrape.total_videos} successful, {failed} failed, {already} already downloaded"
+        if skipped > 0:
+            msg += f", {skipped} already watched"
+        if stopped > 0:
+            msg += f", {stopped} stopped"
+        msg += ")"
+        log_to_scrape(scrape, msg, db)
 
 
 def cleanup_expired_videos(app, db, Video, CACHE_FOLDER):
@@ -261,13 +344,16 @@ def cleanup_expired_videos(app, db, Video, CACHE_FOLDER):
     while True:
         try:
             with app.app_context():
-                from models import Scrape
+                from models import Scrape, SavedVideo
                 now = datetime.utcnow()
                 
-                # Delete expired videos
+                # Get all saved filenames to protect them
+                saved_filenames = {s.filename for s in SavedVideo.query.all()}
+                
+                # Delete expired videos (but not saved ones)
                 expired_videos = Video.query.filter(Video.expires_at < now).all()
                 for video in expired_videos:
-                    if video.filename:
+                    if video.filename and video.filename not in saved_filenames:
                         filepath = os.path.join(CACHE_FOLDER, video.filename)
                         try:
                             if os.path.exists(filepath):
@@ -281,7 +367,7 @@ def cleanup_expired_videos(app, db, Video, CACHE_FOLDER):
                 expired_scrapes = Scrape.query.filter(Scrape.expires_at < now).all()
                 for scrape in expired_scrapes:
                     for video in scrape.videos:
-                        if video.filename:
+                        if video.filename and video.filename not in saved_filenames:
                             filepath = os.path.join(CACHE_FOLDER, video.filename)
                             try:
                                 if os.path.exists(filepath):

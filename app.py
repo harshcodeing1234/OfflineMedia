@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user #type:ignore
 from werkzeug.security import generate_password_hash, check_password_hash #type:ignore
 from database import db, init_db
-from models import User, Scrape, Video, Comment, Like
+from models import User, Scrape, Video, Comment, Like, SavedVideo, WatchHistory
 from datetime import datetime, timedelta #type:ignore
 import os
 import threading
@@ -106,6 +106,11 @@ def scrapp():
 def play():
     return render_template('play.html')
 
+@app.route('/saved')
+@login_required
+def saved():
+    return render_template('saved.html')
+
 @app.route('/polling')
 @login_required
 def polling():
@@ -159,7 +164,7 @@ def get_stats():
     total_scraps = Scrape.query.filter_by(user_id=current_user.id).count()
     total_videos = Video.query.join(Scrape).filter(
         Scrape.user_id == current_user.id,
-        Video.status == 'ready'
+        Video.status == 'completed'
     ).count()
     
     # Count likes by getting filenames from user's videos
@@ -225,15 +230,17 @@ def create_scrape():
     db.session.commit()
     
     # Start scraping in background
-    threading.Thread(target=run_scraper, args=(scrape.id, data['duration'], data['ttl'], data.get('platforms', 'all')), daemon=True).start()
+    hashtags = data.get('hashtags', {})
+    quantity = data.get('quantity', 100)
+    threading.Thread(target=run_scraper, args=(scrape.id, data['duration'], data['ttl'], data.get('platforms', 'all'), hashtags, quantity), daemon=True).start()
     
     return jsonify({'success': True, 'scrape_id': scrape.id})
 
 
-def run_scraper(scrape_id, duration, ttl, platforms):
+def run_scraper(scrape_id, duration, ttl, platforms, hashtags=None, quantity=100):
     """Wrapper for scraper session"""
     with app.app_context():
-        run_scraper_session(scrape_id, duration, ttl, platforms, db, Video, Scrape, executor, download_video, CACHE_FOLDER)
+        run_scraper_session(scrape_id, duration, ttl, platforms, hashtags or {}, quantity, db, Video, Scrape, executor, download_video, CACHE_FOLDER)
 
 
 def download_video(video_id, url, scrape_id):
@@ -252,9 +259,22 @@ def get_videos():
             if f.endswith(('.mp4', '.webm', '.mkv', '.avi', '.mov')):
                 video_files.append(f)
     
-    # Remove duplicates and shuffle
+    # Get watched videos for current user
+    watched_filenames = {h.filename for h in WatchHistory.query.filter_by(user_id=current_user.id).all()}
+    
+    # Filter out watched videos
+    unwatched_files = [f for f in video_files if f not in watched_filenames]
+    
+    # If no unwatched videos, use watched videos (shuffled)
+    if not unwatched_files:
+        video_files = [f for f in video_files if f in watched_filenames]
+        random.shuffle(video_files)
+    else:
+        video_files = unwatched_files
+        random.shuffle(video_files)
+    
+    # Remove duplicates
     video_files = list(set(video_files))
-    random.shuffle(video_files)
     
     # Get DB records for metadata
     db_videos = {v.filename: v for v in Video.query.join(Scrape).filter(
@@ -306,6 +326,11 @@ def stop_scrape(scrape_id):
         return jsonify(error), code
     scrape.status = 'stopped'
     db.session.commit()
+    
+    # Create stop flag file to signal scraping threads
+    stop_flag = f"stop_{scrape_id}.flag"
+    open(stop_flag, 'w').close()
+    
     return jsonify({'success': True})
 
 @app.route('/api/scrape/<int:scrape_id>/delete', methods=['DELETE'])
@@ -405,12 +430,145 @@ def delete_comment(comment_id):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/api/video/<filename>/save', methods=['POST'])
+@login_required
+def save_video(filename):
+    # Check if already saved
+    existing = SavedVideo.query.filter_by(filename=filename, user_id=current_user.id).first()
+    
+    if existing:
+        # Unsave
+        db.session.delete(existing)
+        db.session.commit()
+        return jsonify({'saved': False})
+    else:
+        # Get platform from video or filename
+        video = Video.query.filter_by(filename=filename).first()
+        platform = video.platform if video else filename.split('_')[0]
+        
+        # Copy file to permanent location if needed
+        import shutil
+        src = os.path.join(CACHE_FOLDER, filename)
+        if os.path.exists(src):
+            saved_video = SavedVideo(
+                user_id=current_user.id,
+                filename=filename,
+                platform=platform
+            )
+            db.session.add(saved_video)
+            db.session.commit()
+            return jsonify({'saved': True})
+        else:
+            return jsonify({'error': 'Video not found'}), 404
+
+@app.route('/api/saved-videos')
+@login_required
+def get_saved_videos():
+    import random
+    saved = SavedVideo.query.filter_by(user_id=current_user.id).order_by(SavedVideo.created_at.desc()).all()
+    
+    # Get user's likes
+    user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
+    
+    # Get likes count
+    from sqlalchemy import func
+    likes_count = dict(db.session.query(Like.filename, func.count(Like.id)).group_by(Like.filename).all())
+    comments_count = dict(db.session.query(Comment.filename, func.count(Comment.id)).group_by(Comment.filename).all())
+    
+    result = []
+    for s in saved:
+        # Check if file still exists
+        if os.path.exists(os.path.join(CACHE_FOLDER, s.filename)):
+            result.append({
+                'id': s.id,
+                'platform': s.platform,
+                'filename': s.filename,
+                'likes': likes_count.get(s.filename, 0),
+                'liked': s.filename in user_likes,
+                'comment_count': comments_count.get(s.filename, 0),
+                'created_at': s.created_at.isoformat()
+            })
+    
+    return jsonify(result)
+
+@app.route('/api/saved-video/<int:saved_id>', methods=['DELETE'])
+@login_required
+def delete_saved_video(saved_id):
+    saved = SavedVideo.query.get_or_404(saved_id)
+    if saved.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Delete file
+    filepath = os.path.join(CACHE_FOLDER, saved.filename)
+    safe_file_operation(os.remove, filepath)
+    
+    db.session.delete(saved)
+    db.session.commit()
+    return jsonify({'success': True})
+
 @app.route('/cache/<path:filename>')
 @login_required
 def serve_video(filename):
     return send_from_directory(CACHE_FOLDER, filename)
 
+@app.route('/api/video/<filename>/watch', methods=['POST'])
+@login_required
+def mark_watched(filename):
+    existing = WatchHistory.query.filter_by(filename=filename, user_id=current_user.id).first()
+    if not existing:
+        video = Video.query.filter_by(filename=filename).first()
+        platform = video.platform if video else filename.split('_')[0]
+        history = WatchHistory(user_id=current_user.id, filename=filename, platform=platform)
+        db.session.add(history)
+        db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/history')
+@login_required
+def history():
+    return render_template('history.html')
+
+@app.route('/api/history-videos')
+@login_required
+def get_history_videos():
+    import random
+    history = WatchHistory.query.filter_by(user_id=current_user.id).order_by(WatchHistory.watched_at.desc()).all()
+    
+    user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
+    from sqlalchemy import func
+    likes_count = dict(db.session.query(Like.filename, func.count(Like.id)).group_by(Like.filename).all())
+    comments_count = dict(db.session.query(Comment.filename, func.count(Comment.id)).group_by(Comment.filename).all())
+    
+    result = []
+    for h in history:
+        if os.path.exists(os.path.join(CACHE_FOLDER, h.filename)):
+            result.append({
+                'id': h.id,
+                'platform': h.platform,
+                'filename': h.filename,
+                'likes': likes_count.get(h.filename, 0),
+                'liked': h.filename in user_likes,
+                'comment_count': comments_count.get(h.filename, 0),
+                'watched_at': h.watched_at.isoformat()
+            })
+    return jsonify(result)
+
 if __name__ == '__main__':
+    # Protect cache folder
+    if not os.path.exists(CACHE_FOLDER):
+        os.makedirs(CACHE_FOLDER)
+    
+    # Set restrictive permissions (owner only)
+    try:
+        os.chmod(CACHE_FOLDER, 0o700)
+    except:
+        pass
+    
+    # Create .nomedia file to hide from gallery apps
+    nomedia_path = os.path.join(CACHE_FOLDER, '.nomedia')
+    if not os.path.exists(nomedia_path):
+        open(nomedia_path, 'w').close()
+    
     cleanup_thread = threading.Thread(target=cleanup_expired_videos, args=(app, db, Video, CACHE_FOLDER), daemon=True)
     cleanup_thread.start()
     app.run(host='0.0.0.0', port=5001, debug=False, use_reloader=False)

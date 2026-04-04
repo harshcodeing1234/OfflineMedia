@@ -2,9 +2,6 @@
 SERVER_URL = "http://127.0.0.1:5000"
 SERVER_PORT = 5000
 
-# Agent Configuration
-MAX_VIDEOS_PER_PLATFORM = 100
-
 # Download Configuration
 CACHE_FOLDER = "cache"
 THREAD_POOL_WORKERS = 10  # Balanced speed and stability

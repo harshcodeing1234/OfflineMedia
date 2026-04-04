@@ -845,6 +845,7 @@
       <a class="nav-item" href="/dashboard"><span class="nav-icon"></span> Dashboard</a>
       <a class="nav-item active" href="/scrapp"><span class="nav-icon"></span> My Scrapp</a>
       <a class="nav-item" href="/play"><span class="nav-icon"></span> Play</a>
+      <a class="nav-item" href="/saved"><span class="nav-icon"></span> Saved</a>
       <a class="nav-item" href="/polling"><span class="nav-icon"></span> Polling</a>
     </div>
     <div class="profile-area">
@@ -886,16 +887,19 @@
       <div class="modal-title">New Scrapp</div>
       <div class="form-group">
         <label>Select Platforms</label>
-        <select id="ns_platforms">
+        <select id="ns_platforms" onchange="updateHashtagInputs()">
+          <option value="" selected>Select Platform...</option>
           <option value="instagram">Instagram</option>
           <option value="youtube">YouTube</option>
           <option value="facebook">Facebook</option>
           <option value="instagram & youtube">Instagram & YouTube</option>
           <option value="youtube & facebook">YouTube & Facebook</option>
           <option value="facebook & instagram">Facebook & Instagram</option>
-          <option value="all" selected>All Platforms</option>
+          <option value="all">All Platforms</option>
         </select>
       </div>
+      <div id="hashtagInputs"></div>
+      <div class="form-group"><label>Quantity (videos per platform)</label><input type="number" id="ns_quantity" placeholder="e.g. 100" min="1"></div>
       <div class="form-group"><label>Duration (minutes)</label><input type="number" id="ns_dur" placeholder="e.g. 30"
           min="1"></div>
       <div class="form-group"><label>TTL – Time To Live (hours)</label><input type="number" id="ns_ttl"
@@ -1051,10 +1055,10 @@
       <div class="scrap-card">
         <div class="scrap-header">
           <div class="scrap-top">
-            <div class="scrap-title">Scrapp #${s.id}</div>
+            <div class="scrap-title">Scrapp ${s.id}</div>
             <div class="scrap-actions">
               ${isScrapingOrDownloading ? `<button class="action-btn stop-btn" onclick="stopScrap(${s.id})">⏹ Stop</button>` : ''}
-              <button class="action-btn del-btn" onclick="deleteScrap(${s.id})">🗑 Delete</button>
+              <button class="action-btn del-btn" onclick="deleteScrap(${s.id})">Delete</button>
             </div>
           </div>
           <div class="scrap-meta-row">
@@ -1118,7 +1122,35 @@
       }
     }
 
-    function openNewScrap() { document.getElementById('scrapModal').classList.add('open'); }
+    function updateHashtagInputs() {
+      const platforms = document.getElementById('ns_platforms').value;
+      const container = document.getElementById('hashtagInputs');
+      
+      if (!platforms) {
+        container.innerHTML = '';
+        return;
+      }
+      
+      let selectedPlatforms = [];
+      if (platforms === 'all') {
+        selectedPlatforms = ['instagram', 'youtube'];
+      } else {
+        selectedPlatforms = platforms.split(' & ').map(p => p.trim()).filter(p => p !== 'facebook');
+      }
+      
+      container.innerHTML = selectedPlatforms.map(p => `
+        <div class="form-group">
+          <label>${p.charAt(0).toUpperCase() + p.slice(1)} Hashtags (comma-separated, optional)</label>
+          <input type="text" id="hashtag_${p}" placeholder="e.g. travel, food, nature">
+        </div>
+      `).join('');
+    }
+
+    function openNewScrap() { 
+      document.getElementById('scrapModal').classList.add('open');
+      updateHashtagInputs();
+    }
+    
     function closeModal(id) { 
       if (id) {
         document.getElementById(id).classList.remove('open');
@@ -1131,18 +1163,29 @@
       const platforms = document.getElementById('ns_platforms').value;
       const dur = parseInt(document.getElementById('ns_dur').value) || 30;
       const ttl = parseInt(document.getElementById('ns_ttl').value) || 24;
+      const quantity = parseInt(document.getElementById('ns_quantity').value) || 100;
+      
+      const hashtags = {};
+      let selectedPlatforms = platforms === 'all' ? ['instagram', 'youtube'] : platforms.split(' & ').map(p => p.trim()).filter(p => p !== 'facebook');
+      selectedPlatforms.forEach(p => {
+        const input = document.getElementById(`hashtag_${p}`);
+        if (input && input.value.trim()) {
+          hashtags[p] = input.value.trim().split(',').map(h => h.trim().replace(/^#/, '')).filter(h => h);
+        }
+      });
 
       try {
         const res = await fetch('/api/scrape', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ platforms: platforms, duration: dur, ttl: ttl })
+          body: JSON.stringify({ platforms: platforms, duration: dur, ttl: ttl, hashtags: hashtags, quantity: quantity })
         });
         const data = await res.json();
         if (data.success) {
           closeModal();
-          ['ns_dur', 'ns_ttl'].forEach(id => document.getElementById(id).value = '');
-          document.getElementById('ns_platforms').value = 'all';
+          ['ns_dur', 'ns_ttl', 'ns_quantity'].forEach(id => document.getElementById(id).value = '');
+          document.getElementById('ns_platforms').value = '';
+          document.getElementById('hashtagInputs').innerHTML = '';
           showToast('Scrapp started! ');
           setTimeout(render, 2000);
         }
@@ -1284,6 +1327,10 @@
   </nav>
 
   <div class="mobile-profile-menu" id="mobileProfileMenu">
+    <button class="mobile-menu-item" onclick="window.location.href='/saved'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      Saved
+    </button>
     <button class="mobile-menu-item" onclick="openSettings()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"/></svg>
       Settings
