@@ -225,9 +225,13 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 'file_access_retries': 3,
             }
             
-            # Add cookies only if file exists (for Instagram)
+            # Add cookies if file exists (for Instagram & YouTube)
             if os.path.exists('cookies.txt'):
                 ydl_opts['cookiefile'] = 'cookies.txt'
+            
+            # Alternative: Use browser cookies for YouTube
+            if video.platform == 'youtube' and not os.path.exists('cookies.txt'):
+                ydl_opts['cookiesfrombrowser'] = ('chrome',)
             
             with YoutubeDL(ydl_opts) as ydl:
                 try:

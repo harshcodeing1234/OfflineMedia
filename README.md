@@ -136,17 +136,19 @@ In today's digital age, users face several challenges with social media content:
 
 ### Preview
 - Dashboard UI
-![alt text](image-5.png)
+![alt text](img/image-5.png)
+![alt text](img/image-9.png)
 - Reels Player  
-![alt text](image-1.png)
+![alt text](img/image-1.png)
+![alt text](img/image-8.png)
 - Scraping System
-![alt text](image-2.png)
+![alt text](img/image-2.png)
 - logs
-![alt text](image-3.png) 
+![alt text](img/image-3.png) 
 - auth screen
-![alt text](image-6.png)
-*App support
-![alt text](image-7.png)
+![alt text](img/image-6.png)
+- App support
+![alt text](img/image-7.png)
 ---
 
 ## Desktop Setup
