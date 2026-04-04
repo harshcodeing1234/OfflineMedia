@@ -134,6 +134,19 @@ In today's digital age, users face several challenges with social media content:
 - Session management (365 days)
 - User-specific content isolation
 
+### Preview
+- Dashboard UI
+![alt text](image-5.png)
+- Reels Player  
+![alt text](image-1.png)
+- Scraping System
+![alt text](image-2.png)
+- logs
+![alt text](image-3.png) 
+- auth screen
+![alt text](image-6.png)
+*App support
+![alt text](image-7.png)
 ---
 
 ## Desktop Setup
