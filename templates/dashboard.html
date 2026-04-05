@@ -31,12 +31,29 @@
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       min-height: 100vh;
       display: flex;
+      overflow: auto;
+      overscroll-behavior: none;
+    }
+
+    /* Performance optimizations */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    img, video {
+      image-rendering: -webkit-optimize-contrast;
     }
 
     /* ── SIDEBAR NAV ── */
@@ -251,6 +268,10 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
     }
 
     .main::before {
@@ -301,10 +322,16 @@
       grid-template-columns: 1fr auto;
       gap: 24px;
       align-items: start;
+      overflow-y: visible;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
     }
 
     .content-left {
       min-width: 0;
+      will-change: scroll-position;
+      transform: translateZ(0);
     }
 
     /* Stats */
@@ -313,6 +340,7 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 28px;
+      contain: layout style;
     }
 
     .stat-card {
@@ -322,11 +350,13 @@
       padding: 22px;
       position: relative;
       overflow: hidden;
-      transition: transform .3s;
+      transition: transform .2s ease-out;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .stat-card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-2px) translateZ(0);
     }
 
     .stat-card::before {
@@ -424,12 +454,14 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: all .25s;
+      transition: all .2s ease-out;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .scrap-row:hover {
       border-color: var(--accent);
-      transform: translateX(4px);
+      transform: translateX(4px) translateZ(0);
     }
 
     .scrap-thumb {
@@ -827,6 +859,8 @@
       margin-bottom: 32px;
       scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
+      will-change: scroll-position;
+      transform: translateZ(0);
     }
 
     .shorts-scroll::-webkit-scrollbar {
@@ -850,18 +884,23 @@
       overflow: hidden;
       position: relative;
       cursor: pointer;
-      transition: transform .2s;
+      transition: transform .2s ease-out;
       background: var(--card);
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .short-card:hover {
-      transform: scale(1.05);
+      transform: scale(1.05) translateZ(0);
     }
 
     .short-card video {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      pointer-events: none;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
     .short-overlay {
@@ -1428,7 +1467,9 @@
         console.log('🛑 Fast polling - scraping active');
       } else if (!scraping && isScraping) {
         isScraping = false;
+        window.clearVideoCache(); // Clear cache when scraping completes
         await updateStats();
+        await loadShorts(); // Reload videos
         startPolling();
         console.log('▶️ Polling resumed - scraping finished');
       } else if (!scraping) {
@@ -1614,6 +1655,13 @@
         });
         const data = await res.json();
         if (data.success) {
+          // Clear cache when new scrape starts
+          sessionStorage.removeItem('dashboardShorts');
+          sessionStorage.removeItem('playVideos');
+          sessionStorage.removeItem('savedVideos');
+          sessionStorage.removeItem('historyVideos');
+          sessionStorage.removeItem('continueWatching');
+          
           closeModal('scrapModal');
           ['ns_dur', 'ns_ttl', 'ns_quantity'].forEach(id => document.getElementById(id).value = '');
           document.getElementById('ns_platforms').value = '';
@@ -1632,24 +1680,56 @@
 
     function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 
+    // Global cache management
+    window.clearVideoCache = function() {
+      sessionStorage.removeItem('dashboardShorts');
+      sessionStorage.removeItem('playVideos');
+      sessionStorage.removeItem('savedVideos');
+      sessionStorage.removeItem('historyVideos');
+      sessionStorage.removeItem('continueWatching');
+    };
+
     // Shorts functionality
     let allShorts = [];
+    let reelsRow1 = [];
+    let reelsRow2 = [];
     let currentReelIndex = 0;
     let continueWatchingVideos = [];
 
     async function loadContinueWatching() {
+      const cached = sessionStorage.getItem('continueWatching');
+      if (cached) {
+        continueWatchingVideos = JSON.parse(cached);
+        return;
+      }
+      
       try {
-        const res = await fetch('/api/history-videos');
+        const res = await fetch('/api/history-videos?limit=9');
         continueWatchingVideos = await res.json();
+        sessionStorage.setItem('continueWatching', JSON.stringify(continueWatchingVideos));
       } catch (e) {
         console.error('Failed to load continue watching:', e);
       }
     }
 
     async function loadShorts() {
+      const cached = sessionStorage.getItem('dashboardShorts');
+      if (cached) {
+        allShorts = JSON.parse(cached);
+        reelsRow1 = allShorts.slice(0, 9);
+        reelsRow2 = allShorts.slice(9, 18);
+        renderReelsFeed();
+        return;
+      }
+      
       try {
-        const res = await fetch('/api/videos');
+        const res = await fetch('/api/videos?limit=27');
         allShorts = await res.json();
+        sessionStorage.setItem('dashboardShorts', JSON.stringify(allShorts));
+        
+        reelsRow1 = allShorts.slice(0, 9);
+        reelsRow2 = allShorts.slice(9, 18);
+        
         renderReelsFeed();
       } catch (e) {
         console.error('Failed to load shorts:', e);
@@ -1663,19 +1743,22 @@
         return;
       }
 
-      const chunkSize = 9;
-      const chunks = [];
-      for (let i = 0; i < allShorts.length; i += chunkSize) {
-        chunks.push(allShorts.slice(i, i + chunkSize));
-      }
-
       let html = '';
-      chunks.forEach((chunk, rowIndex) => {
-        if (rowIndex === 1 && continueWatchingVideos.length > 0) {
-          html += renderContinueWatchingRow();
-        }
-        html += renderReelsRow(chunk, rowIndex);
-      });
+      
+      // Row 1: Reels
+      if (reelsRow1.length > 0) {
+        html += renderReelsRow(reelsRow1, 0, 'Reels');
+      }
+      
+      // Row 2: Continue Watching
+      if (continueWatchingVideos.length > 0) {
+        html += renderContinueWatchingRow();
+      }
+      
+      // Row 3: Reels 2
+      if (reelsRow2.length > 0) {
+        html += renderReelsRow(reelsRow2, 1, 'Reels');
+      }
 
       feed.innerHTML = html;
       startAllPreviews();
@@ -1692,7 +1775,7 @@
           <div class="shorts-scroll">
             ${videos.map((v, i) => `
               <div class="short-card" onclick="playHistoryVideo('${v.filename}')">
-                <video id="continue-${i}" src="/cache/${v.filename}" muted></video>
+                <video id="continue-${i}" src="/cache/${v.filename}" muted preload="none" loading="lazy"></video>
                 <div class="short-overlay">
                   <div class="short-platform">${v.platform}</div>
                 </div>
@@ -1703,11 +1786,11 @@
       `;
     }
 
-    function renderReelsRow(videos, rowIndex) {
+    function renderReelsRow(videos, rowIndex, title) {
       return `
         <div style="margin-bottom:32px">
           <div class="section-header">
-            <span class="section-title">Reels</span>
+            <span class="section-title">${title}</span>
             <a class="see-all" href="/play">See all →</a>
           </div>
           <div class="shorts-scroll">
@@ -1715,7 +1798,7 @@
               const globalIndex = rowIndex * 9 + i;
               return `
                 <div class="short-card" onclick="openReels(${globalIndex})">
-                  <video id="reel-preview-${globalIndex}" src="/cache/${v.filename}" muted></video>
+                  <video id="reel-preview-${rowIndex}-${i}" src="/cache/${v.filename}" muted preload="none" loading="lazy"></video>
                   <div class="short-overlay">
                     <div class="short-platform">${v.platform}</div>
                   </div>
@@ -1728,21 +1811,55 @@
     }
 
     function startAllPreviews() {
-      playNextPreview(0, 'reel-preview');
+      // Lazy load videos with Intersection Observer
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const video = entry.target;
+            if (video.preload === 'none') {
+              video.preload = 'metadata';
+              video.load();
+            }
+          }
+        });
+      }, { rootMargin: '100px', threshold: 0.1 });
+
+      // Observe all video elements
+      document.querySelectorAll('.short-card video').forEach(vid => observer.observe(vid));
+      
+      // Stagger preview playback for better performance
+      if (reelsRow1.length > 0) {
+        setTimeout(() => playNextPreview(0, 0, 'reel-preview'), 300);
+      }
+      
+      if (reelsRow2.length > 0) {
+        setTimeout(() => playNextPreview(1, 0, 'reel-preview'), 600);
+      }
+      
       if (continueWatchingVideos.length > 0) {
-        playNextPreview(0, 'continue');
+        setTimeout(() => playNextPreview(0, 0, 'continue'), 900);
       }
     }
 
-    function playNextPreview(index, prefix) {
-      const vid = document.getElementById(`${prefix}-${index}`);
-      if (!vid) {
-        playNextPreview(0, prefix);
-        return;
+    function playNextPreview(rowIndex, videoIndex, prefix) {
+      const vid = prefix === 'continue' 
+        ? document.getElementById(`${prefix}-${videoIndex}`)
+        : document.getElementById(`${prefix}-${rowIndex}-${videoIndex}`);
+      
+      if (!vid) return;
+      
+      // Only play if video is in viewport
+      const rect = vid.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        vid.play().catch(() => {});
       }
       
-      vid.play().catch(() => {});
-      vid.onended = () => playNextPreview(index + 1, prefix);
+      vid.onended = () => {
+        const maxVideos = prefix === 'continue' ? continueWatchingVideos.length : 
+                         (rowIndex === 0 ? reelsRow1.length : reelsRow2.length);
+        const nextIndex = (videoIndex + 1) % maxVideos;
+        playNextPreview(rowIndex, nextIndex, prefix);
+      };
     }
 
     function playHistoryVideo(filename) {

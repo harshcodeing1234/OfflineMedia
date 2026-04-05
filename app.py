@@ -161,30 +161,40 @@ def update_user():
 @app.route('/api/stats')
 @login_required
 def get_stats():
-    total_scraps = Scrape.query.filter_by(user_id=current_user.id).count()
-    total_videos = Video.query.join(Scrape).filter(
+    from sqlalchemy import func
+    
+    # Optimize with single queries
+    total_scraps = db.session.query(func.count(Scrape.id)).filter_by(user_id=current_user.id).scalar()
+    
+    total_videos = db.session.query(func.count(Video.id)).join(Scrape).filter(
         Scrape.user_id == current_user.id,
         Video.status == 'completed'
-    ).count()
+    ).scalar()
     
-    # Count likes by getting filenames from user's videos
-    total_likes = db.session.query(Like).join(
+    # Count likes efficiently
+    total_likes = db.session.query(func.count(Like.id)).join(
         Video, Like.filename == Video.filename
     ).join(Scrape).filter(
         Scrape.user_id == current_user.id
-    ).count()
+    ).scalar()
     
-    cache_size = sum(
-        os.path.getsize(os.path.join(CACHE_FOLDER, f)) 
-        for f in os.listdir(CACHE_FOLDER) 
-        if os.path.isfile(os.path.join(CACHE_FOLDER, f))
-    ) if os.path.exists(CACHE_FOLDER) else 0
+    # Calculate cache size (only for user's videos)
+    cache_size = 0
+    user_filenames = db.session.query(Video.filename).join(Scrape).filter(
+        Scrape.user_id == current_user.id,
+        Video.status == 'completed'
+    ).all()
+    
+    for (filename,) in user_filenames:
+        filepath = os.path.join(CACHE_FOLDER, filename)
+        if os.path.exists(filepath):
+            cache_size += os.path.getsize(filepath)
     
     return jsonify({
-        'total_videos': total_videos,
-        'total_scraps': total_scraps,
+        'total_videos': total_videos or 0,
+        'total_scraps': total_scraps or 0,
         'cache_size_mb': round(cache_size / (1024 * 1024), 1),
-        'total_likes': total_likes
+        'total_likes': total_likes or 0
     })
 
 @app.route('/api/scraping-status')
@@ -250,62 +260,61 @@ def download_video(video_id, url, scrape_id):
 @app.route('/api/videos')
 @login_required
 def get_videos():
-    import random
+    limit = request.args.get('limit', type=int)
+    offset = request.args.get('offset', default=0, type=int)
     
-    # Get all video files from cache folder
-    video_files = []
-    if os.path.exists(CACHE_FOLDER):
-        for f in os.listdir(CACHE_FOLDER):
-            if f.endswith(('.mp4', '.webm', '.mkv', '.avi', '.mov')):
-                video_files.append(f)
+    # Get user's videos from DB
+    query = Video.query.join(Scrape).filter(
+        Scrape.user_id == current_user.id,
+        Video.status == 'completed'
+    ).order_by(Video.created_at.desc())
     
-    # Get watched videos for current user
+    if limit:
+        query = query.limit(limit).offset(offset)
+    
+    videos = query.all()
+    
+    # Get watched videos
     watched_filenames = {h.filename for h in WatchHistory.query.filter_by(user_id=current_user.id).all()}
     
-    # Filter out watched videos
-    unwatched_files = [f for f in video_files if f not in watched_filenames]
-    
-    # If no unwatched videos, use watched videos (shuffled)
-    if not unwatched_files:
-        video_files = [f for f in video_files if f in watched_filenames]
-        random.shuffle(video_files)
-    else:
-        video_files = unwatched_files
-        random.shuffle(video_files)
-    
-    # Remove duplicates
-    video_files = list(set(video_files))
-    
-    # Get DB records for metadata
-    db_videos = {v.filename: v for v in Video.query.join(Scrape).filter(
-        Scrape.user_id == current_user.id
-    ).all()}
-    
-    # Get user's likes by filename
+    # Get user's likes
     user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
     
-    # Get likes count per filename
+    # Get likes count
     from sqlalchemy import func
     likes_count = dict(db.session.query(Like.filename, func.count(Like.id)).group_by(Like.filename).all())
-    
-    # Get comments count per filename
     comments_count = dict(db.session.query(Comment.filename, func.count(Comment.id)).group_by(Comment.filename).all())
     
-    result = []
-    for i, filename in enumerate(video_files):
-        v = db_videos.get(filename)
-        result.append({
-            'id': v.id if v else i,
-            'platform': v.platform if v else 'Unknown',
-            'filename': filename,
-            'url': v.url if v else '',
-            'likes': likes_count.get(filename, 0),
-            'liked': filename in user_likes,
-            'comment_count': comments_count.get(filename, 0),
-            'scrape_id': v.scrape_id if v else None
-        })
+    # Separate unwatched and watched
+    unwatched = []
+    watched = []
     
-    return jsonify(result)
+    for v in videos:
+        if not os.path.exists(os.path.join(CACHE_FOLDER, v.filename)):
+            continue
+            
+        video_data = {
+            'id': v.id,
+            'platform': v.platform,
+            'filename': v.filename,
+            'url': v.url,
+            'likes': likes_count.get(v.filename, 0),
+            'liked': v.filename in user_likes,
+            'comment_count': comments_count.get(v.filename, 0),
+            'scrape_id': v.scrape_id,
+            'watched': v.filename in watched_filenames
+        }
+        
+        if v.filename in watched_filenames:
+            watched.append(video_data)
+        else:
+            unwatched.append(video_data)
+    
+    # Return unwatched first, then watched (only if no unwatched)
+    if unwatched:
+        return jsonify(unwatched)
+    else:
+        return jsonify(watched)
 
 @app.route('/api/scrape-logs/<int:scrape_id>')
 @login_required
@@ -464,8 +473,14 @@ def save_video(filename):
 @app.route('/api/saved-videos')
 @login_required
 def get_saved_videos():
-    import random
-    saved = SavedVideo.query.filter_by(user_id=current_user.id).order_by(SavedVideo.created_at.desc()).all()
+    limit = request.args.get('limit', type=int)
+    
+    query = SavedVideo.query.filter_by(user_id=current_user.id).order_by(SavedVideo.created_at.desc())
+    
+    if limit:
+        query = query.limit(limit)
+    
+    saved = query.all()
     
     # Get user's likes
     user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
@@ -531,8 +546,14 @@ def history():
 @app.route('/api/history-videos')
 @login_required
 def get_history_videos():
-    import random
-    history = WatchHistory.query.filter_by(user_id=current_user.id).order_by(WatchHistory.watched_at.desc()).all()
+    limit = request.args.get('limit', type=int)
+    
+    query = WatchHistory.query.filter_by(user_id=current_user.id).order_by(WatchHistory.watched_at.desc())
+    
+    if limit:
+        query = query.limit(limit)
+    
+    history = query.all()
     
     user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
     from sqlalchemy import func

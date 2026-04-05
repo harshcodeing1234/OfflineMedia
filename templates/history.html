@@ -1349,10 +1349,27 @@
     let currentFilter = 'mix';
 
     async function loadVideos() {
+      const cached = sessionStorage.getItem('historyVideos');
+      if (cached) {
+        allVideos = JSON.parse(cached);
+        // Shuffle on every load
+        allVideos = allVideos.sort(() => Math.random() - 0.5);
+        videos = [...allVideos];
+        buildAllVideos();
+        filterPlatform('mix');
+        return;
+      }
+      
       showLoading();
       try {
         const res = await fetch('/api/history-videos');
         allVideos = await res.json();
+        
+        // Shuffle videos randomly
+        allVideos = allVideos.sort(() => Math.random() - 0.5);
+        
+        sessionStorage.setItem('historyVideos', JSON.stringify(allVideos));
+        
         if (!allVideos.length) {
           hideLoading();
           document.getElementById('feedWrap').innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#666"><div style="font-size:60px">📭</div><div style="font-family:Syne,sans-serif;font-size:18px">No watch history yet</div><a href="/play" style="color:#7c3aed;font-size:14px">Watch videos →</a></div>';
@@ -1376,7 +1393,6 @@
       }
       playing[activeVideoIdx] = false;
       
-      showLoading();
       currentFilter = platform;
       
       // Close dropdown
@@ -1392,29 +1408,30 @@
       };
       document.getElementById('reelsTitle').textContent = titles[platform];
 
-      // Show/hide videos based on platform
+      // Show/hide videos based on platform (no rebuild)
       let visibleCount = 0;
       let firstVisibleIdx = -1;
       
-      allVideos.forEach((v, i) => {
+      videos.forEach((v, i) => {
         const slide = document.getElementById('slide-' + i);
         if (slide) {
           const shouldShow = platform === 'mix' || v.platform.toLowerCase() === platform;
-          slide.style.display = shouldShow ? 'flex' : 'none';
           if (shouldShow) {
+            slide.style.display = 'flex';
             slide.style.transform = `translateY(${visibleCount * 100}vh)`;
             if (firstVisibleIdx === -1) firstVisibleIdx = i;
             visibleCount++;
+          } else {
+            slide.style.display = 'none';
           }
         }
       });
-
+      
       if (visibleCount === 0) {
         const platformName = titles[platform];
         document.getElementById('feedContainer').style.display = 'none';
         document.getElementById('emptyState').style.display = 'flex';
         document.getElementById('emptyStateText').textContent = 'No videos from ' + platformName;
-        hideLoading();
         return;
       }
 
@@ -1423,7 +1440,8 @@
 
       activeVideoIdx = firstVisibleIdx;
       const container = document.getElementById('feedContainer');
-      container.style.transform = `translateY(-${0}vh)`;
+      container.style.transform = `translateY(0vh)`;
+      
       startVideo(firstVisibleIdx);
     }
 
@@ -1456,7 +1474,7 @@
       const container = document.getElementById('feedContainer');
       container.innerHTML = '';
 
-      allVideos.forEach((v, i) => {
+      videos.forEach((v, i) => {
         const slide = document.createElement('div');
         slide.className = 'video-slide';
         slide.id = 'slide-' + i;
@@ -1868,8 +1886,18 @@
         }
         const data = await res.json();
         console.log('Like response:', data);
-        allVideos[i].likes = data.likes;
-        allVideos[i].liked = data.liked;
+        
+        // Update all instances of this video in allVideos array
+        allVideos.forEach(video => {
+          if (video.filename === v.filename) {
+            video.likes = data.likes;
+            video.liked = data.liked;
+          }
+        });
+        
+        // Update cache
+        sessionStorage.setItem('historyVideos', JSON.stringify(allVideos));
+        
         updateLikeUI(i);
       } catch (e) {
         console.error('Failed to like:', e);

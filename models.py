@@ -31,13 +31,13 @@ class Scrape(db.Model):
 
 class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    scrape_id = db.Column(db.Integer, db.ForeignKey('scrape.id'), nullable=False)
+    scrape_id = db.Column(db.Integer, db.ForeignKey('scrape.id'), nullable=False, index=True)
     platform = db.Column(db.String(20), nullable=False)
     url = db.Column(db.String(500), nullable=False)
-    filename = db.Column(db.String(200))
-    status = db.Column(db.String(20), default='pending')
+    filename = db.Column(db.String(200), index=True)
+    status = db.Column(db.String(20), default='pending', index=True)
     likes = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     expires_at = db.Column(db.DateTime)
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
 
@@ -59,16 +59,16 @@ class Like(db.Model):
 
 class SavedVideo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    filename = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    filename = db.Column(db.String(200), nullable=False, index=True)
     platform = db.Column(db.String(20), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     __table_args__ = (db.UniqueConstraint('filename', 'user_id', name='unique_saved_video'),)
 
 class WatchHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    filename = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    filename = db.Column(db.String(200), nullable=False, index=True)
     platform = db.Column(db.String(20), nullable=False)
-    watched_at = db.Column(db.DateTime, default=datetime.utcnow)
+    watched_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     __table_args__ = (db.UniqueConstraint('filename', 'user_id', name='unique_watch_history'),)
