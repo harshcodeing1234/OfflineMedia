@@ -163,35 +163,28 @@ def update_user():
 def get_stats():
     from sqlalchemy import func
     
-    # Optimize with single queries
     total_scraps = db.session.query(func.count(Scrape.id)).filter_by(user_id=current_user.id).scalar()
-    
     total_videos = db.session.query(func.count(Video.id)).join(Scrape).filter(
         Scrape.user_id == current_user.id,
         Video.status == 'completed'
     ).scalar()
-    
-    # Count likes efficiently
     total_likes = db.session.query(func.count(Like.id)).join(
         Video, Like.filename == Video.filename
     ).join(Scrape).filter(
         Scrape.user_id == current_user.id
     ).scalar()
     
-    # Calculate cache size (only for user's videos)
-    cache_size = 0
-    user_filenames = db.session.query(Video.filename).join(Scrape).filter(
-        Scrape.user_id == current_user.id,
-        Video.status == 'completed'
-    ).all()
+    # Calculate actual cache size (all files)
+    cache_size = sum(os.path.getsize(os.path.join(CACHE_FOLDER, f)) 
+                     for f in os.listdir(CACHE_FOLDER) 
+                     if os.path.isfile(os.path.join(CACHE_FOLDER, f)))
     
-    for (filename,) in user_filenames:
-        filepath = os.path.join(CACHE_FOLDER, filename)
-        if os.path.exists(filepath):
-            cache_size += os.path.getsize(filepath)
+    # Count actual video files
+    actual_videos = len([f for f in os.listdir(CACHE_FOLDER) 
+                         if f.endswith(('.mp4', '.webm'))])
     
     return jsonify({
-        'total_videos': total_videos or 0,
+        'total_videos': actual_videos,
         'total_scraps': total_scraps or 0,
         'cache_size_mb': round(cache_size / (1024 * 1024), 1),
         'total_likes': total_likes or 0
@@ -267,12 +260,31 @@ def get_videos():
     query = Video.query.join(Scrape).filter(
         Scrape.user_id == current_user.id,
         Video.status == 'completed'
-    ).order_by(Video.created_at.desc())
+    )
     
-    if limit:
-        query = query.limit(limit).offset(offset)
+    # Shuffle using random order (consistent per session)
+    from sqlalchemy import func
+    query = query.order_by(func.random())
     
     videos = query.all()
+    
+    # Clean up orphaned videos first
+    orphaned = []
+    for v in videos:
+        if not os.path.exists(os.path.join(CACHE_FOLDER, v.filename)):
+            orphaned.append(v)
+    
+    for v in orphaned:
+        db.session.delete(v)
+    
+    if orphaned:
+        db.session.commit()
+        # Re-query after cleanup
+        videos = query.all()
+    
+    # Apply limit/offset after cleanup
+    if limit:
+        videos = videos[offset:offset+limit] if offset else videos[:limit]
     
     # Get watched videos
     watched_filenames = {h.filename for h in WatchHistory.query.filter_by(user_id=current_user.id).all()}
@@ -281,7 +293,6 @@ def get_videos():
     user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
     
     # Get likes count
-    from sqlalchemy import func
     likes_count = dict(db.session.query(Like.filename, func.count(Like.id)).group_by(Like.filename).all())
     comments_count = dict(db.session.query(Comment.filename, func.count(Comment.id)).group_by(Comment.filename).all())
     
@@ -290,9 +301,6 @@ def get_videos():
     watched = []
     
     for v in videos:
-        if not os.path.exists(os.path.join(CACHE_FOLDER, v.filename)):
-            continue
-            
         video_data = {
             'id': v.id,
             'platform': v.platform,
@@ -561,6 +569,7 @@ def get_history_videos():
     comments_count = dict(db.session.query(Comment.filename, func.count(Comment.id)).group_by(Comment.filename).all())
     
     result = []
+    orphaned = []
     for h in history:
         if os.path.exists(os.path.join(CACHE_FOLDER, h.filename)):
             result.append({
@@ -572,6 +581,16 @@ def get_history_videos():
                 'comment_count': comments_count.get(h.filename, 0),
                 'watched_at': h.watched_at.isoformat()
             })
+        else:
+            orphaned.append(h)
+    
+    # Clean up orphaned history entries
+    for h in orphaned:
+        db.session.delete(h)
+    
+    if orphaned:
+        db.session.commit()
+    
     return jsonify(result)
 
 if __name__ == '__main__':

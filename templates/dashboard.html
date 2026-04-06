@@ -41,19 +41,9 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       min-height: 100vh;
       display: flex;
-      overflow: auto;
       overscroll-behavior: none;
-    }
-
-    /* Performance optimizations */
-    * {
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
       -webkit-tap-highlight-color: transparent;
-    }
-
-    img, video {
-      image-rendering: -webkit-optimize-contrast;
     }
 
     /* ── SIDEBAR NAV ── */
@@ -95,7 +85,6 @@
       justify-content: center;
       flex-shrink: 0;
       position: relative;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .logo-icon::before {
@@ -230,7 +219,7 @@
       border-radius: 14px;
       overflow: hidden;
       display: none;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     }
 
     .profile-dropdown.open {
@@ -322,16 +311,10 @@
       grid-template-columns: 1fr auto;
       gap: 24px;
       align-items: start;
-      overflow-y: visible;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      scroll-behavior: smooth;
     }
 
     .content-left {
       min-width: 0;
-      will-change: scroll-position;
-      transform: translateZ(0);
     }
 
     /* Stats */
@@ -340,7 +323,6 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 28px;
-      contain: layout style;
     }
 
     .stat-card {
@@ -350,13 +332,11 @@
       padding: 22px;
       position: relative;
       overflow: hidden;
-      transition: transform .2s ease-out;
-      will-change: transform;
-      transform: translateZ(0);
+      transition: transform .2s;
     }
 
     .stat-card:hover {
-      transform: translateY(-2px) translateZ(0);
+      transform: translateY(-2px);
     }
 
     .stat-card::before {
@@ -454,14 +434,11 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: all .2s ease-out;
-      will-change: transform;
-      transform: translateZ(0);
+      transition: border-color .2s;
     }
 
     .scrap-row:hover {
       border-color: var(--accent);
-      transform: translateX(4px) translateZ(0);
     }
 
     .scrap-thumb {
@@ -564,8 +541,7 @@
       color: #fff;
       font-size: 28px;
       cursor: pointer;
-      /* box-shadow: 0 8px 24px rgba(124, 58, 237, 0.5); */
-      transition: all .3s;
+      transition: transform .2s;
       z-index: 200;
       display: flex;
       align-items: center;
@@ -575,15 +551,13 @@
 
     .fab:hover {
       transform: scale(1.05);
-      box-shadow: 0 12px 32px rgba(33, 16, 61, 0.7);
     }
 
     /* Modal */
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(6px);
+      background: rgba(0, 0, 0, 0.85);
       z-index: 300;
       display: none;
       align-items: center;
@@ -706,7 +680,7 @@
     }
 
     .btn-submit:hover {
-      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+      transform: translateY(-1px);
     }
 
     /* Settings modal */
@@ -789,14 +763,14 @@
       border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
-      transition: transform .2s;
+      transition: transform .15s;
       display: flex;
       gap: 16px;
       padding: 12px;
     }
 
     .continue-card:hover {
-      transform: scale(1.02);
+      transform: scale(1.01);
     }
 
     .continue-thumb {
@@ -855,12 +829,12 @@
       display: flex;
       gap: 12px;
       overflow-x: auto;
+      overflow-y: hidden;
       padding: 12px 0;
       margin-bottom: 32px;
-      scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
       will-change: scroll-position;
-      transform: translateZ(0);
     }
 
     .shorts-scroll::-webkit-scrollbar {
@@ -884,14 +858,15 @@
       overflow: hidden;
       position: relative;
       cursor: pointer;
-      transition: transform .2s ease-out;
+      transition: transform .2s;
       background: var(--card);
+      contain: layout style paint;
       will-change: transform;
       transform: translateZ(0);
     }
 
     .short-card:hover {
-      transform: scale(1.05) translateZ(0);
+      transform: scale(1.05);
     }
 
     .short-card video {
@@ -899,8 +874,7 @@
       height: 100%;
       object-fit: cover;
       pointer-events: none;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
+      background: var(--surface);
     }
 
     .short-overlay {
@@ -945,7 +919,7 @@
     .reels-container {
       height: 100vh;
       position: relative;
-      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
     .reel-slide {
@@ -1098,6 +1072,91 @@
     .bottom-nav-item svg {
       width: 24px;
       height: 24px;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+      pointer-events: all;
+    }
+
+    .loading-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .spinner-wrapper {
+      position: relative;
+      width: 50px;
+      height: 50px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(124, 58, 237, 0.2);
+      border-top-color: #7c3aed;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      position: absolute;
+    }
+
+    .spinner-logo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-logo::before {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 8px solid #fff;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      margin-left: 1px;
+    }
+
+    .loading-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .loading-text span {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .bottom-nav-item svg {
       stroke: currentColor;
       fill: none;
       stroke-width: 2;
@@ -1127,11 +1186,10 @@
       bottom: 70px;
       right: 10px;
       background: #1e1e2a;
-      backdrop-filter: blur(10px);
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       min-width: 160px;
       z-index: 1001;
     }
@@ -1463,7 +1521,7 @@
       if (scraping && !isScraping) {
         isScraping = true;
         if (pollInterval) clearInterval(pollInterval);
-        pollInterval = setInterval(smartPoll, 2000); // Fast poll during scraping
+        pollInterval = setInterval(smartPoll, 5000); // Reduced from 2s to 5s
         console.log('🛑 Fast polling - scraping active');
       } else if (!scraping && isScraping) {
         isScraping = false;
@@ -1479,7 +1537,7 @@
     
     function startPolling() {
       if (pollInterval) clearInterval(pollInterval);
-      pollInterval = setInterval(smartPoll, 10000); // Slow poll when idle
+      pollInterval = setInterval(smartPoll, 30000); // Increased from 10s to 30s
     }
 
     function renderScrapList(scrapes) {
@@ -1697,38 +1755,21 @@
     let continueWatchingVideos = [];
 
     async function loadContinueWatching() {
-      const cached = sessionStorage.getItem('continueWatching');
-      if (cached) {
-        continueWatchingVideos = JSON.parse(cached);
-        return;
-      }
-      
       try {
         const res = await fetch('/api/history-videos?limit=9');
         continueWatchingVideos = await res.json();
-        sessionStorage.setItem('continueWatching', JSON.stringify(continueWatchingVideos));
       } catch (e) {
         console.error('Failed to load continue watching:', e);
       }
     }
 
     async function loadShorts() {
-      const cached = sessionStorage.getItem('dashboardShorts');
-      if (cached) {
-        allShorts = JSON.parse(cached);
-        reelsRow1 = allShorts.slice(0, 9);
-        reelsRow2 = allShorts.slice(9, 18);
-        renderReelsFeed();
-        return;
-      }
-      
       try {
-        const res = await fetch('/api/videos?limit=27');
-        allShorts = await res.json();
-        sessionStorage.setItem('dashboardShorts', JSON.stringify(allShorts));
+        const res = await fetch('/api/videos?limit=15');
+        const videos = await res.json();
+        reelsRow1 = videos.slice(0, 10);
         
-        reelsRow1 = allShorts.slice(0, 9);
-        reelsRow2 = allShorts.slice(9, 18);
+        allShorts = [...continueWatchingVideos, ...reelsRow1];
         
         renderReelsFeed();
       } catch (e) {
@@ -1740,12 +1781,13 @@
       const feed = document.getElementById('reelsFeed');
       if (!allShorts.length) {
         feed.innerHTML = '<div class="empty-state" style="padding:60px 20px"><div class="e-icon"></div><div>No videos yet</div></div>';
+        hideLoading();
         return;
       }
 
       let html = '';
       
-      // Row 1: Reels
+      // Row 1: Instagram Reels
       if (reelsRow1.length > 0) {
         html += renderReelsRow(reelsRow1, 0, 'Reels');
       }
@@ -1754,14 +1796,12 @@
       if (continueWatchingVideos.length > 0) {
         html += renderContinueWatchingRow();
       }
-      
-      // Row 3: Reels 2
-      if (reelsRow2.length > 0) {
-        html += renderReelsRow(reelsRow2, 1, 'Reels');
-      }
 
       feed.innerHTML = html;
       startAllPreviews();
+      
+      // Hide loading after render
+      setTimeout(hideLoading, 500);
     }
 
     function renderContinueWatchingRow() {
@@ -1769,16 +1809,14 @@
       return `
         <div style="margin-bottom:32px">
           <div class="section-header">
-            <span class="section-title">Continue Watching</span>
+            <span class="section-title">Recently Watched</span>
             <a class="see-all" href="/history">See all →</a>
           </div>
           <div class="shorts-scroll">
             ${videos.map((v, i) => `
               <div class="short-card" onclick="playHistoryVideo('${v.filename}')">
-                <video id="continue-${i}" src="/cache/${v.filename}" muted preload="none" loading="lazy"></video>
-                <div class="short-overlay">
-                  <div class="short-platform">${v.platform}</div>
-                </div>
+                <video class="lazy-video" data-src="/cache/${v.filename}" muted preload="none"></video>
+                <div class="short-overlay"></div>
               </div>
             `).join('')}
           </div>
@@ -1795,13 +1833,11 @@
           </div>
           <div class="shorts-scroll">
             ${videos.map((v, i) => {
-              const globalIndex = rowIndex * 9 + i;
+              const globalIndex = continueWatchingVideos.length + (rowIndex * 10) + i;
               return `
                 <div class="short-card" onclick="openReels(${globalIndex})">
-                  <video id="reel-preview-${rowIndex}-${i}" src="/cache/${v.filename}" muted preload="none" loading="lazy"></video>
-                  <div class="short-overlay">
-                    <div class="short-platform">${v.platform}</div>
-                  </div>
+                  <video class="lazy-video" data-src="/cache/${v.filename}" muted preload="none"></video>
+                  <div class="short-overlay"></div>
                 </div>
               `;
             }).join('')}
@@ -1811,34 +1847,36 @@
     }
 
     function startAllPreviews() {
-      // Lazy load videos with Intersection Observer
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
+      // Separate observer for each scroll container
+      document.querySelectorAll('.shorts-scroll').forEach(container => {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
             const video = entry.target;
-            if (video.preload === 'none') {
-              video.preload = 'metadata';
-              video.load();
+            if (entry.isIntersecting) {
+              const src = video.getAttribute('data-src');
+              if (src && !video.src) {
+                video.src = src + '#t=0.1';
+                video.load();
+              }
+            } else {
+              // Unload video when out of view
+              if (video.src) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+              }
             }
-          }
+          });
+        }, { 
+          root: container,
+          rootMargin: '50px',
+          threshold: 0.1
         });
-      }, { rootMargin: '100px', threshold: 0.1 });
 
-      // Observe all video elements
-      document.querySelectorAll('.short-card video').forEach(vid => observer.observe(vid));
-      
-      // Stagger preview playback for better performance
-      if (reelsRow1.length > 0) {
-        setTimeout(() => playNextPreview(0, 0, 'reel-preview'), 300);
-      }
-      
-      if (reelsRow2.length > 0) {
-        setTimeout(() => playNextPreview(1, 0, 'reel-preview'), 600);
-      }
-      
-      if (continueWatchingVideos.length > 0) {
-        setTimeout(() => playNextPreview(0, 0, 'continue'), 900);
-      }
+        container.querySelectorAll('.lazy-video').forEach(video => {
+          observer.observe(video);
+        });
+      });
     }
 
     function playNextPreview(rowIndex, videoIndex, prefix) {
@@ -1917,6 +1955,7 @@
 
     function setupReelsSwipe() {
       let touchStartY = 0;
+      let isTransitioning = false;
       const container = document.getElementById('reelsContainer');
       
       container.addEventListener('touchstart', (e) => {
@@ -1924,15 +1963,19 @@
       }, { passive: true });
       
       container.addEventListener('touchend', (e) => {
+        if (isTransitioning) return;
+        
         const touchEndY = e.changedTouches[0].clientY;
         const distance = touchStartY - touchEndY;
         
         if (Math.abs(distance) > 80) {
+          isTransitioning = true;
           if (distance > 0) {
             goToReel(currentReelIndex + 1);
           } else {
             goToReel(currentReelIndex - 1);
           }
+          setTimeout(() => { isTransitioning = false; }, 400);
         }
       }, { passive: true });
 
@@ -1951,28 +1994,61 @@
         }
       });
 
-      // Mouse wheel
+      // Mouse wheel with debouncing
       let lastWheel = 0;
+      let wheelTimeout = null;
       container.addEventListener('wheel', (e) => {
         e.preventDefault();
         const now = Date.now();
-        if (now - lastWheel < 600) return;
-        lastWheel = now;
         
-        if (e.deltaY > 30) {
-          goToReel(currentReelIndex + 1);
-        } else if (e.deltaY < -30) {
-          goToReel(currentReelIndex - 1);
-        }
+        if (now - lastWheel < 800) return;
+        
+        if (wheelTimeout) clearTimeout(wheelTimeout);
+        
+        wheelTimeout = setTimeout(() => {
+          if (e.deltaY > 30) {
+            goToReel(currentReelIndex + 1);
+          } else if (e.deltaY < -30) {
+            goToReel(currentReelIndex - 1);
+          }
+          lastWheel = now;
+        }, 50);
       }, { passive: false });
     }
 
     loadUser();
-    updateStats();
-    startPolling();
-    loadContinueWatching();
-    loadShorts();
+    async function init() {
+      showLoading();
+      updateStats();
+      startPolling();
+      await loadContinueWatching();
+      await loadShorts();
+      // hideLoading called in renderReelsFeed
+    }
+    
+    function showLoading() {
+      const el = document.getElementById('loadingOverlay');
+      if (el) el.classList.add('show');
+    }
+    
+    function hideLoading() {
+      const el = document.getElementById('loadingOverlay');
+      if (el) el.classList.remove('show');
+    }
+    
+    init();
   </script>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay show" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="spinner-wrapper">
+        <div class="spinner"></div>
+        <div class="spinner-logo"></div>
+      </div>
+      <div class="loading-text">Offline<span>Media</span></div>
+    </div>
+  </div>
 
   <!-- Mobile Bottom Navigation -->
   <nav class="bottom-nav">
@@ -2059,6 +2135,7 @@
     });
 
   </script>
+
 </body>
 
 </html>

@@ -1,8 +1,8 @@
 """
 Database initialization and migrations
 """
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from flask_sqlalchemy import SQLAlchemy #type:ignore
+from sqlalchemy import text #type:ignore
 
 db = SQLAlchemy()
 

@@ -211,7 +211,6 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             log_to_scrape(scrape, f"⬇ Downloading: {video.platform} video {video_id}...", db)
             
             ydl_opts = {
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                 'outtmpl': path,
                 'quiet': True,
                 'no_warnings': True,
@@ -224,8 +223,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 'socket_timeout': 30,
                 'extractor_retries': 3,
                 'file_access_retries': 3,
-            }
-            
+            }         
             # Add cookies if file exists (for Instagram & YouTube)
             if os.path.exists('cookies.txt'):
                 ydl_opts['cookiefile'] = 'cookies.txt'

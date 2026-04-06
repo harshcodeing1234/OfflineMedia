@@ -1348,39 +1348,46 @@
     let allVideos = [];
     let currentFilter = 'mix';
 
+    let offset = 0;
+    const limit = 30;
+    let hasMore = true;
+    let loading = false;
+
     async function loadVideos() {
-      const cached = sessionStorage.getItem('playVideos');
-      if (cached) {
-        allVideos = JSON.parse(cached);
-        // Shuffle on every load
-        allVideos = allVideos.sort(() => Math.random() - 0.5);
-        videos = [...allVideos];
-        buildAllVideos();
-        filterPlatform('mix');
-        return;
-      }
-      
+      if (loading || !hasMore) return;
+      loading = true;
       showLoading();
       try {
-        const res = await fetch('/api/videos');
-        allVideos = await res.json();
+        const res = await fetch(`/api/videos?limit=${limit}&offset=${offset}`);
+        const newVideos = await res.json();
         
-        // Shuffle videos randomly
-        allVideos = allVideos.sort(() => Math.random() - 0.5);
-        
-        sessionStorage.setItem('playVideos', JSON.stringify(allVideos));
-        
-        if (!allVideos.length) {
-          hideLoading();
-          document.getElementById('feedWrap').innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#666"><div style="font-size:60px">📭</div><div style="font-family:Syne,sans-serif;font-size:18px">No videos yet</div><a href="/scrapp" style="color:#7c3aed;font-size:14px">Create a Scrapp →</a></div>';
+        if (!newVideos.length) {
+          hasMore = false;
+          if (!allVideos.length) {
+            hideLoading();
+            document.getElementById('feedWrap').innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#666"><div style="font-size:60px">📭</div><div style="font-family:Syne,sans-serif;font-size:18px">No videos yet</div><a href="/scrapp" style="color:#7c3aed;font-size:14px">Create a Scrapp →</a></div>';
+          }
+          loading = false;
           return;
         }
+        
+        allVideos = [...allVideos, ...newVideos];
+        offset += newVideos.length;
+        hasMore = newVideos.length === limit;
+        
         videos = [...allVideos];
         buildAllVideos();
-        filterPlatform('mix');
+        
+        if (offset === newVideos.length) {
+          filterPlatform('mix');
+        }
+        
+        hideLoading();
+        loading = false;
       } catch (e) {
         console.error('Failed to load videos:', e);
         hideLoading();
+        loading = false;
       }
     }
 
@@ -1484,7 +1491,7 @@
 
         slide.innerHTML = `
       <div class="video-bg">
-        ${v.filename ? `<video id="vid-${i}" style="width:100%;height:100%;object-fit:contain" src="/cache/${v.filename}" loop preload="auto" playsinline webkit-playsinline muted></video>` : `<div class="video-placeholder">${emoji}</div>`}
+        ${v.filename ? `<video id="vid-${i}" style="width:100%;height:100%;object-fit:contain" src="/cache/${v.filename}" loop preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow" muted></video>` : `<div class="video-placeholder">${emoji}</div>`}
       </div>
       <div class="progress-bar"><div class="progress-fill" id="prog-${i}"></div></div>
       <div class="video-overlay">
@@ -1752,7 +1759,17 @@
       if (index === activeVideoIdx + 1) targetPos = currentPos + 1;
       else if (index === activeVideoIdx - 1) targetPos = currentPos - 1;
       
-      if (targetPos < 0 || targetPos >= visibleSlides.length) return;
+      // Loop back to start if at end
+      if (targetPos >= visibleSlides.length) {
+        // Reached end - reshuffle and loop
+        allVideos = allVideos.sort(() => Math.random() - 0.5);
+        videos = [...allVideos];
+        buildAllVideos();
+        filterPlatform(currentFilter);
+        targetPos = 0;
+      } else if (targetPos < 0) {
+        targetPos = visibleSlides.length - 1;
+      }
       
       const targetIdx = visibleSlides[targetPos];
       if (targetIdx === activeVideoIdx) return;
@@ -1771,9 +1788,18 @@
     }
 
     function updateVisibility() {
-      // Preload nearby videos
-      const nextVid = document.getElementById('vid-' + (activeVideoIdx + 1));
-      if (nextVid && !nextVid.readyState) nextVid.load();
+      // Load more videos when near end
+      if (activeVideoIdx >= videos.length - 10 && hasMore && !loading) {
+        loadVideos();
+      }
+      
+      // Preload nearby videos aggressively
+      for (let j = -1; j <= 3; j++) {
+        const vid = document.getElementById('vid-' + (activeVideoIdx + j));
+        if (vid && vid.readyState < 3) {
+          vid.load();
+        }
+      }
     }
 
     // ── Touch Swipe ──
@@ -1819,7 +1845,11 @@
       if (vid) {
         if (resetTime) vid.currentTime = 0;
         
-        // Wait for video to be loaded before hiding loading and playing
+        // Aggressive preload
+        if (vid.readyState < 3) {
+          vid.load();
+        }
+        
         const playWhenReady = () => {
           vid.muted = false;
           vid.play().then(() => {
@@ -1830,17 +1860,24 @@
           });
         };
 
-        if (vid.readyState >= 3) {
-          // Video already loaded
+        if (vid.readyState >= 2) {
           playWhenReady();
         } else {
-          // Wait for video to load
-          vid.addEventListener('canplay', playWhenReady, { once: true });
+          vid.addEventListener('loadeddata', playWhenReady, { once: true });
+          setTimeout(() => {
+            if (vid.readyState < 2) {
+              hideLoading();
+            }
+          }, 3000);
         }
 
-        // Preload next video
-        const nextVid = document.getElementById('vid-' + (i + 1));
-        if (nextVid) nextVid.load();
+        // Preload next 3 videos
+        for (let j = 1; j <= 3; j++) {
+          const nextVid = document.getElementById('vid-' + (i + j));
+          if (nextVid && nextVid.readyState < 3) {
+            nextVid.load();
+          }
+        }
       } else {
         hideLoading();
       }

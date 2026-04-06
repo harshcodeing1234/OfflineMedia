@@ -1349,17 +1349,6 @@
     let currentFilter = 'mix';
 
     async function loadVideos() {
-      const cached = sessionStorage.getItem('historyVideos');
-      if (cached) {
-        allVideos = JSON.parse(cached);
-        // Shuffle on every load
-        allVideos = allVideos.sort(() => Math.random() - 0.5);
-        videos = [...allVideos];
-        buildAllVideos();
-        filterPlatform('mix');
-        return;
-      }
-      
       showLoading();
       try {
         const res = await fetch('/api/history-videos');
@@ -1367,8 +1356,6 @@
         
         // Shuffle videos randomly
         allVideos = allVideos.sort(() => Math.random() - 0.5);
-        
-        sessionStorage.setItem('historyVideos', JSON.stringify(allVideos));
         
         if (!allVideos.length) {
           hideLoading();
@@ -1894,9 +1881,6 @@
             video.liked = data.liked;
           }
         });
-        
-        // Update cache
-        sessionStorage.setItem('historyVideos', JSON.stringify(allVideos));
         
         updateLikeUI(i);
       } catch (e) {
