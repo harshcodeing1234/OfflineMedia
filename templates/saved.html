@@ -1527,12 +1527,6 @@
           </div>
           <span class="action-label">Loop</span>
         </div>
-        <div class="action-btn" id="deleteBtn-${i}" data-action="delete" data-index="${i}">
-          <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <span class="action-label">Delete</span>
-        </div>
       </div>
       <div class="play-pause" id="pp-${i}">⏸</div>
       <div class="dbl-heart" id="dblH-${i}">❤️</div>`;
@@ -1549,7 +1543,6 @@
             else if (action === 'comment') openComments(idx);
             else if (action === 'share') openShare(idx);
             else if (action === 'loop') toggleLoop(idx);
-            else if (action === 'delete') deleteSavedVideo(idx);
           });
         });
 
@@ -1642,12 +1635,6 @@
           </div>
           <span class="action-label">Loop</span>
         </div>
-        <div class="action-btn" id="deleteBtn-${i}" data-action="delete" data-index="${i}">
-          <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <span class="action-label">Delete</span>
-        </div>
       </div>
       <div class="play-pause" id="pp-${i}">⏸</div>
       <div class="dbl-heart" id="dblH-${i}">❤️</div>`;
@@ -1664,7 +1651,6 @@
             else if (action === 'comment') openComments(idx);
             else if (action === 'share') openShare(idx);
             else if (action === 'loop') toggleLoop(idx);
-            else if (action === 'delete') deleteSavedVideo(idx);
           });
         });
 
@@ -1951,31 +1937,7 @@
     }
 
     // ── Delete Saved Video ──
-    async function deleteSavedVideo(i) {
-      if (!confirm('Delete this saved video permanently?')) return;
-      
-      try {
-        const v = allVideos[i];
-        const res = await fetch(`/api/saved-video/${v.id}`, { method: 'DELETE' });
-        if (res.ok) {
-          showToast('Video deleted');
-          // Remove from array and reload
-          allVideos.splice(i, 1);
-          if (allVideos.length === 0) {
-            showEmptyState();
-          } else {
-            videos = allVideos;
-            buildDesktopFeed();
-            buildFeed();
-            setupVideoObserver();
-          }
-        } else {
-          showToast('Failed to delete video');
-        }
-      } catch (e) {
-        showToast('Failed to delete video');
-      }
-    }
+    // ── Delete Saved Video - REMOVED ──
 
     // ── Comments ──
     async function openComments(i) {

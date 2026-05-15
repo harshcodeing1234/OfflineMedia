@@ -544,6 +544,7 @@ def delete_saved_video(saved_id):
     db.session.delete(saved)
     db.session.commit()
     return jsonify({'success': True})
+    return jsonify({'success': True})
 
 @app.route('/cache/<path:filename>')
 @login_required
@@ -608,6 +609,17 @@ def get_history_videos():
         db.session.commit()
     
     return jsonify(result)
+
+@app.route('/api/history/<int:history_id>', methods=['DELETE'])
+@login_required
+def delete_history(history_id):
+    history = WatchHistory.query.get_or_404(history_id)
+    if history.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db.session.delete(history)
+    db.session.commit()
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     # Protect cache folder
