@@ -253,54 +253,62 @@ def download_video(video_id, url, scrape_id):
 @app.route('/api/videos')
 @login_required
 def get_videos():
-    limit = request.args.get('limit', type=int)
+    limit = request.args.get('limit', default=30, type=int)
     offset = request.args.get('offset', default=0, type=int)
+    exclude_ids = request.args.get('exclude', default='', type=str)
     
-    # Get user's videos from DB
-    query = Video.query.join(Scrape).filter(
-        Scrape.user_id == current_user.id,
-        Video.status == 'completed'
-    )
-    
-    # Shuffle using random order (consistent per session)
-    from sqlalchemy import func
-    query = query.order_by(func.random())
-    
-    videos = query.all()
-    
-    # Clean up orphaned videos first
-    orphaned = []
-    for v in videos:
-        if not os.path.exists(os.path.join(CACHE_FOLDER, v.filename)):
-            orphaned.append(v)
-    
-    for v in orphaned:
-        db.session.delete(v)
-    
-    if orphaned:
-        db.session.commit()
-        # Re-query after cleanup
-        videos = query.all()
-    
-    # Apply limit/offset after cleanup
-    if limit:
-        videos = videos[offset:offset+limit] if offset else videos[:limit]
+    # Parse excluded video IDs
+    excluded = set()
+    if exclude_ids:
+        try:
+            excluded = set(map(int, exclude_ids.split(',')))
+        except:
+            pass
     
     # Get watched videos
     watched_filenames = {h.filename for h in WatchHistory.query.filter_by(user_id=current_user.id).all()}
     
-    # Get user's likes
-    user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
+    # Get ALL user's videos from DB
+    from sqlalchemy import func
+    query = Video.query.join(Scrape).filter(
+        Scrape.user_id == current_user.id,
+        Video.status == 'completed'
+    ).order_by(Video.created_at.desc())
     
-    # Get likes count
+    # Exclude already fetched videos
+    if excluded:
+        query = query.filter(Video.id.notin_(excluded))
+    
+    videos = query.all()
+    
+    # Clean up orphaned videos
+    orphaned = []
+    valid_videos = []
+    for v in videos:
+        if not os.path.exists(os.path.join(CACHE_FOLDER, v.filename)):
+            orphaned.append(v)
+        else:
+            valid_videos.append(v)
+    
+    for v in orphaned:
+        db.session.delete(v)
+    if orphaned:
+        db.session.commit()
+    
+    # Get user's likes and saved videos
+    user_likes = {like.filename for like in Like.query.filter_by(user_id=current_user.id).all()}
+    user_saved = {saved.filename for saved in SavedVideo.query.filter_by(user_id=current_user.id).all()}
+    
+    # Get likes and comments count
     likes_count = dict(db.session.query(Like.filename, func.count(Like.id)).group_by(Like.filename).all())
     comments_count = dict(db.session.query(Comment.filename, func.count(Comment.id)).group_by(Comment.filename).all())
     
-    # Separate unwatched and watched
+    # Prioritize unwatched videos
+    import random
     unwatched = []
     watched = []
     
-    for v in videos:
+    for v in valid_videos:
         video_data = {
             'id': v.id,
             'platform': v.platform,
@@ -308,6 +316,7 @@ def get_videos():
             'url': v.url,
             'likes': likes_count.get(v.filename, 0),
             'liked': v.filename in user_likes,
+            'saved': v.filename in user_saved,
             'comment_count': comments_count.get(v.filename, 0),
             'scrape_id': v.scrape_id,
             'watched': v.filename in watched_filenames
@@ -318,11 +327,16 @@ def get_videos():
         else:
             unwatched.append(video_data)
     
-    # Return unwatched first, then watched (only if no unwatched)
-    if unwatched:
-        return jsonify(unwatched)
-    else:
-        return jsonify(watched)
+    # Shuffle unwatched and watched separately
+    random.shuffle(unwatched)
+    random.shuffle(watched)
+    
+    # Return unwatched first, then watched to fill up to limit
+    result = unwatched[:limit]
+    if len(result) < limit:
+        result.extend(watched[:limit - len(result)])
+    
+    return jsonify(result)
 
 @app.route('/api/scrape-logs/<int:scrape_id>')
 @login_required
@@ -367,7 +381,7 @@ def delete_scrape(scrape_id):
     db.session.commit()
     return jsonify({'success': True})
 
-@app.route('/api/video/<filename>/like', methods=['POST'])
+@app.route('/api/video/<path:filename>/like', methods=['POST'])
 @login_required
 def like_video(filename):
     print(f"❤️ Like request for video {filename}")
@@ -392,7 +406,7 @@ def like_video(filename):
     print(f"Video {filename} now has {total_likes} likes (liked={liked})")
     return jsonify({'likes': total_likes, 'liked': liked})
 
-@app.route('/api/video/<filename>/comment', methods=['POST'])
+@app.route('/api/video/<path:filename>/comment', methods=['POST'])
 @login_required
 def add_comment(filename):
     data = request.json
@@ -404,7 +418,7 @@ def add_comment(filename):
     total_comments = Comment.query.filter_by(filename=filename).count()
     return jsonify({'success': True, 'comment_count': total_comments})
 
-@app.route('/api/video/<filename>/comments')
+@app.route('/api/video/<path:filename>/comments')
 @login_required
 def get_comments(filename):
     comments = Comment.query.filter_by(filename=filename).order_by(Comment.created_at.desc()).all()
@@ -415,11 +429,13 @@ def get_comments(filename):
             user = User.query.get(c.user_id)
             user_cache[c.user_id] = {
                 'username': user.username if user else 'Unknown',
+                'name': user.name if user else None,
                 'avatar': user.avatar if user else None
             }
         result.append({
             'id': c.id,
             'username': user_cache[c.user_id]['username'],
+            'name': user_cache[c.user_id]['name'],
             'avatar': user_cache[c.user_id]['avatar'],
             'text': c.text,
             'created_at': c.created_at.isoformat()
@@ -447,7 +463,7 @@ def delete_comment(comment_id):
     db.session.commit()
     return jsonify({'success': True})
 
-@app.route('/api/video/<filename>/save', methods=['POST'])
+@app.route('/api/video/<path:filename>/save', methods=['POST'])
 @login_required
 def save_video(filename):
     # Check if already saved
@@ -534,7 +550,7 @@ def delete_saved_video(saved_id):
 def serve_video(filename):
     return send_from_directory(CACHE_FOLDER, filename)
 
-@app.route('/api/video/<filename>/watch', methods=['POST'])
+@app.route('/api/video/<path:filename>/watch', methods=['POST'])
 @login_required
 def mark_watched(filename):
     existing = WatchHistory.query.filter_by(filename=filename, user_id=current_user.id).first()

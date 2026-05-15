@@ -1347,6 +1347,7 @@
     let videos = [];
     let allVideos = [];
     let currentFilter = 'mix';
+    let seenVideoIds = new Set();
 
     let offset = 0;
     const limit = 30;
@@ -1358,7 +1359,9 @@
       loading = true;
       showLoading();
       try {
-        const res = await fetch(`/api/videos?limit=${limit}&offset=${offset}`);
+        const excludeParam = Array.from(seenVideoIds).join(',');
+        const url = `/api/videos?limit=${limit}&offset=${offset}${excludeParam ? '&exclude=' + excludeParam : ''}`;
+        const res = await fetch(url);
         const newVideos = await res.json();
         
         if (!newVideos.length) {
@@ -1371,14 +1374,29 @@
           return;
         }
         
-        allVideos = [...allVideos, ...newVideos];
-        offset += newVideos.length;
+        // Filter out duplicates and track seen IDs
+        const uniqueNew = newVideos.filter(v => {
+          if (seenVideoIds.has(v.id)) return false;
+          seenVideoIds.add(v.id);
+          return true;
+        });
+        
+        if (!uniqueNew.length) {
+          offset += limit;
+          loading = false;
+          hideLoading();
+          return loadVideos();
+        }
+        
+        const startIdx = allVideos.length;
+        allVideos = [...allVideos, ...uniqueNew];
+        offset += limit;
         hasMore = newVideos.length === limit;
         
         videos = [...allVideos];
-        buildAllVideos();
+        appendVideos(uniqueNew, startIdx);
         
-        if (offset === newVideos.length) {
+        if (startIdx === 0) {
           filterPlatform('mix');
         }
         
@@ -1415,11 +1433,11 @@
       };
       document.getElementById('reelsTitle').textContent = titles[platform];
 
-      // Show/hide videos based on platform (no rebuild)
+      // Show/hide videos based on platform and reposition
       let visibleCount = 0;
       let firstVisibleIdx = -1;
       
-      videos.forEach((v, i) => {
+      allVideos.forEach((v, i) => {
         const slide = document.getElementById('slide-' + i);
         if (slide) {
           const shouldShow = platform === 'mix' || v.platform.toLowerCase() === platform;
@@ -1482,23 +1500,40 @@
       container.innerHTML = '';
 
       videos.forEach((v, i) => {
-        const slide = document.createElement('div');
-        slide.className = 'video-slide';
-        slide.id = 'slide-' + i;
-        slide.setAttribute('data-platform', v.platform.toLowerCase());
-        slide.style.transform = `translateY(${i * 100}vh)`;
-        const emoji = emojiBg[i % emojiBg.length];
+        const slide = createVideoSlide(v, i);
+        container.appendChild(slide);
+      });
+    }
 
-        slide.innerHTML = `
+    function appendVideos(newVids, startIdx) {
+      const container = document.getElementById('feedContainer');
+      
+      newVids.forEach((v, idx) => {
+        const i = startIdx + idx;
+        const slide = createVideoSlide(v, i);
+        container.appendChild(slide);
+      });
+    }
+
+    function createVideoSlide(v, i) {
+      const slide = document.createElement('div');
+      slide.className = 'video-slide';
+      slide.id = 'slide-' + i;
+      slide.setAttribute('data-platform', v.platform.toLowerCase());
+      slide.style.transform = `translateY(${i * 100}vh)`;
+      const emoji = emojiBg[i % emojiBg.length];
+
+      slide.innerHTML = `
       <div class="video-bg">
         ${v.filename ? `<video id="vid-${i}" style="width:100%;height:100%;object-fit:contain" src="/cache/${v.filename}" loop preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow" muted></video>` : `<div class="video-placeholder">${emoji}</div>`}
       </div>
       <div class="progress-bar"><div class="progress-fill" id="prog-${i}"></div></div>
+      ${v.watched ? '<div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;color:#10b981;border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;gap:6px;z-index:10"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Watched</div>' : ''}
       <div class="video-overlay">
         <div class="video-info">
           <div class="video-avatar" id="videoAvatar-${i}"></div>
           <div class="video-details">
-            <div class="video-user">${userData.username}</div>
+            <div class="video-user">${userData.name || userData.username}</div>
             <div class="video-title">${v.platform}</div>
           </div>
         </div>
@@ -1543,206 +1578,98 @@
       <div class="play-pause" id="pp-${i}">⏸</div>
       <div class="dbl-heart" id="dblH-${i}">❤️</div>`;
 
-        // Action button handlers
-        slide.querySelectorAll('[data-action]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            const action = btn.dataset.action;
-            const idx = parseInt(btn.dataset.index);
+      // Action button handlers
+      slide.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const action = btn.dataset.action;
+          const idx = parseInt(btn.dataset.index);
 
-            if (action === 'like') toggleLike(idx);
-            else if (action === 'comment') openComments(idx);
-            else if (action === 'share') openShare(idx);
-            else if (action === 'loop') toggleLoop(idx);
-            else if (action === 'save') saveVideo(idx);
-          });
+          if (action === 'like') toggleLike(idx);
+          else if (action === 'comment') openComments(idx);
+          else if (action === 'share') openShare(idx);
+          else if (action === 'loop') toggleLoop(idx);
+          else if (action === 'save') saveVideo(idx);
         });
-
-        // Long press for 2x speed & Double tap to like
-        let tapTimer = null;
-        let lastTap = 0;
-        let longPressTimer = null;
-        
-        slide.addEventListener('mousedown', e => {
-          if (e.target.closest('.action-bar')) return;
-          longPressTimer = setTimeout(() => {
-            const vid = document.getElementById('vid-' + i);
-            if (vid) vid.playbackRate = 2.0;
-          }, 500);
-        });
-        
-        slide.addEventListener('mouseup', e => {
-          if (longPressTimer) clearTimeout(longPressTimer);
-          const vid = document.getElementById('vid-' + i);
-          if (vid && vid.playbackRate === 2.0) vid.playbackRate = 1.0;
-        });
-        
-        slide.addEventListener('touchstart', e => {
-          if (e.target.closest('.action-bar')) return;
-          longPressTimer = setTimeout(() => {
-            const vid = document.getElementById('vid-' + i);
-            if (vid) vid.playbackRate = 2.0;
-          }, 500);
-        }, { passive: true });
-        
-        slide.addEventListener('touchend', e => {
-          if (longPressTimer) clearTimeout(longPressTimer);
-          const vid = document.getElementById('vid-' + i);
-          if (vid && vid.playbackRate === 2.0) vid.playbackRate = 1.0;
-        }, { passive: true });
-        
-        slide.addEventListener('click', e => {
-          if (e.target.closest('.action-bar')) return;
-
-          const now = Date.now();
-          if (now - lastTap < 300) {
-            clearTimeout(tapTimer);
-            e.preventDefault();
-            doubleTapLike(i);
-            lastTap = 0;
-          } else {
-            tapTimer = setTimeout(() => togglePlayPause(i), 300);
-          }
-          lastTap = now;
-        });
-
-        // Set avatar
-        const avatarEl = slide.querySelector(`#videoAvatar-${i}`);
-        if (avatarEl) {
-          if (userData.avatar) {
-            avatarEl.innerHTML = `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-          } else {
-            const initials = (userData.name || userData.username).split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-            avatarEl.textContent = initials;
-          }
-        }
-
-        container.appendChild(slide);
-      });
-    }
-
-    // ── Build feed ──
-    function buildFeed() {
-      const container = document.getElementById('feedContainer');
-      container.innerHTML = '';
-
-      videos.forEach((v, i) => {
-        const slide = document.createElement('div');
-        slide.className = 'video-slide';
-        slide.id = 'slide-' + i;
-        slide.style.transform = `translateY(${i * 100}vh)`;
-        const emoji = emojiBg[i % emojiBg.length];
-
-        slide.innerHTML = `
-      <div class="video-bg">
-        ${v.filename ? `<video id="vid-${i}" style="width:100%;height:100%;object-fit:contain" src="/cache/${v.filename}" loop preload="auto" playsinline webkit-playsinline muted></video>` : `<div class="video-placeholder">${emoji}</div>`}
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="prog-${i}"></div></div>
-      <div class="video-overlay">
-        <div class="video-info">
-          <div class="video-avatar" id="videoAvatar-${i}"></div>
-          <div class="video-details">
-            <div class="video-user">${userData.username}</div>
-            <div class="video-title">${v.platform} video</div>
-          </div>
-        </div>
-      </div>
-      <div class="action-bar">
-        <div class="action-btn ${v.liked ? 'liked' : ''}" id="likeBtn-${i}" data-action="like" data-index="${i}">
-          <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <span class="action-label" id="likeCnt-${i}" style="display: ${v.likes > 0 ? 'block' : 'none'}">${v.likes}</span>
-        </div>
-        <div class="action-btn" id="commentBtn-${i}" data-action="comment" data-index="${i}">
-          <div class="action-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-          </div>
-          <span class="action-label" id="comCnt-${i}" style="display: ${v.comment_count > 0 ? 'block' : 'none'}">${v.comment_count}</span>
-        </div>
-        <div class="action-btn" id="shareBtn-${i}" data-action="share" data-index="${i}">
-          <div class="action-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-          </div>
-          <span class="action-label">Share</span>
-        </div>
-        <div class="action-btn" id="loopBtn-${i}" data-action="loop" data-index="${i}">
-          <div class="action-icon" id="loopIcon-${i}">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <span class="action-label">Loop</span>
-        </div>
-        <div class="action-btn" id="saveBtn-${i}" data-action="save" data-index="${i}">
-          <div class="action-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-5-7 5V4a1 1 0 0 1 1-1z"/></svg>
-          </div>
-          <span class="action-label">Save</span>
-        </div>
-      </div>
-      <div class="play-pause" id="pp-${i}">⏸</div>
-      <div class="dbl-heart" id="dblH-${i}">❤️</div>`;
-
-        // Action button handlers
-        slide.querySelectorAll('[data-action]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            const action = btn.dataset.action;
-            const idx = parseInt(btn.dataset.index);
-
-            if (action === 'like') toggleLike(idx);
-            else if (action === 'comment') openComments(idx);
-            else if (action === 'share') openShare(idx);
-            else if (action === 'loop') toggleLoop(idx);
-            else if (action === 'save') saveVideo(idx);
-          });
-        });
-
-        // Double tap to like
-        let tapTimer = null;
-        let lastTap = 0;
-        slide.addEventListener('click', e => {
-          if (e.target.closest('.action-bar')) return;
-
-          const now = Date.now();
-          if (now - lastTap < 300) {
-            clearTimeout(tapTimer);
-            e.preventDefault();
-            doubleTapLike(i);
-            lastTap = 0;
-          } else {
-            tapTimer = setTimeout(() => togglePlayPause(i), 300);
-          }
-          lastTap = now;
-        });
-
-        // Set avatar
-        const avatarEl = slide.querySelector(`#videoAvatar-${i}`);
-        if (avatarEl) {
-          if (userData.avatar) {
-            avatarEl.innerHTML = `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-          } else {
-            const initials = (userData.name || userData.username).split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-            avatarEl.textContent = initials;
-          }
-        }
-
-        container.appendChild(slide);
       });
 
-      // Don't auto-start video here, wait for it to load
-      updateVisibility();
-      startVideo(0);
+      // Set saved status
+      if (v.saved) {
+        const saveBtn = slide.querySelector(`#saveBtn-${i}`);
+        if (saveBtn) saveBtn.classList.add('saved');
+      }
+
+      // Long press for 2x speed & Double tap to like
+      let tapTimer = null;
+      let lastTap = 0;
+      let longPressTimer = null;
+      
+      slide.addEventListener('mousedown', e => {
+        if (e.target.closest('.action-bar')) return;
+        longPressTimer = setTimeout(() => {
+          const vid = document.getElementById('vid-' + i);
+          if (vid) vid.playbackRate = 2.0;
+        }, 500);
+      });
+      
+      slide.addEventListener('mouseup', e => {
+        if (longPressTimer) clearTimeout(longPressTimer);
+        const vid = document.getElementById('vid-' + i);
+        if (vid && vid.playbackRate === 2.0) vid.playbackRate = 1.0;
+      });
+      
+      slide.addEventListener('touchstart', e => {
+        if (e.target.closest('.action-bar')) return;
+        longPressTimer = setTimeout(() => {
+          const vid = document.getElementById('vid-' + i);
+          if (vid) vid.playbackRate = 2.0;
+        }, 500);
+      }, { passive: true });
+      
+      slide.addEventListener('touchend', e => {
+        if (longPressTimer) clearTimeout(longPressTimer);
+        const vid = document.getElementById('vid-' + i);
+        if (vid && vid.playbackRate === 2.0) vid.playbackRate = 1.0;
+      }, { passive: true });
+      
+      slide.addEventListener('click', e => {
+        if (e.target.closest('.action-bar')) return;
+
+        const now = Date.now();
+        if (now - lastTap < 300) {
+          clearTimeout(tapTimer);
+          e.preventDefault();
+          doubleTapLike(i);
+          lastTap = 0;
+        } else {
+          tapTimer = setTimeout(() => togglePlayPause(i), 300);
+        }
+        lastTap = now;
+      });
+
+      // Set avatar
+      const avatarEl = slide.querySelector(`#videoAvatar-${i}`);
+      if (avatarEl) {
+        if (userData.avatar) {
+          avatarEl.innerHTML = `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        } else {
+          const initials = (userData.name || userData.username).split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+          avatarEl.textContent = initials;
+        }
+      }
+
+      return slide;
     }
 
     // ── Swipe Navigation ──
+    let scrollThrottle = null;
     function goToSlide(index) {
       if (isTransitioning) return;
+      
+      // Throttle rapid scrolling
+      if (scrollThrottle) return;
+      scrollThrottle = setTimeout(() => scrollThrottle = null, 100);
 
       // Find visible slides
       const visibleSlides = [];
@@ -1759,13 +1686,13 @@
       if (index === activeVideoIdx + 1) targetPos = currentPos + 1;
       else if (index === activeVideoIdx - 1) targetPos = currentPos - 1;
       
+      // Load more when near end
+      if (targetPos >= visibleSlides.length - 5 && hasMore && !loading) {
+        loadVideos();
+      }
+      
       // Loop back to start if at end
       if (targetPos >= visibleSlides.length) {
-        // Reached end - reshuffle and loop
-        allVideos = allVideos.sort(() => Math.random() - 0.5);
-        videos = [...allVideos];
-        buildAllVideos();
-        filterPlatform(currentFilter);
         targetPos = 0;
       } else if (targetPos < 0) {
         targetPos = visibleSlides.length - 1;
@@ -1775,21 +1702,27 @@
       if (targetIdx === activeVideoIdx) return;
 
       isTransitioning = true;
-      pauseVideo(activeVideoIdx);
+      
+      // Safely pause current video
+      try {
+        pauseVideo(activeVideoIdx);
+      } catch(e) {}
 
       activeVideoIdx = targetIdx;
       const container = document.getElementById('feedContainer');
       container.style.transform = `translateY(-${targetPos * 100}vh)`;
 
       setTimeout(() => {
-        startVideo(targetIdx);
+        try {
+          startVideo(targetIdx);
+        } catch(e) {}
         isTransitioning = false;
       }, 350);
     }
 
     function updateVisibility() {
       // Load more videos when near end
-      if (activeVideoIdx >= videos.length - 10 && hasMore && !loading) {
+      if (activeVideoIdx >= allVideos.length - 10 && hasMore && !loading) {
         loadVideos();
       }
       
@@ -1904,6 +1837,17 @@
       try {
         await fetch(`/api/video/${encodeURIComponent(v.filename)}/watch`, { method: 'POST' });
         console.log('Video saved to history:', v.filename);
+        
+        // Mark as watched in UI
+        allVideos[i].watched = true;
+        const slide = document.getElementById('slide-' + i);
+        if (slide && !slide.querySelector('.watched-badge')) {
+          const badge = document.createElement('div');
+          badge.className = 'watched-badge';
+          badge.style.cssText = 'position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;color:#10b981;border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;gap:6px;z-index:10';
+          badge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Watched';
+          slide.appendChild(badge);
+        }
       } catch (e) {
         console.error('Failed to save to history:', e);
       }
@@ -1914,8 +1858,10 @@
       clearWatchTimer(i);
       const vid = document.getElementById('vid-' + i);
       if (vid) {
-        vid.pause();
-        vid.muted = true;
+        try {
+          vid.pause();
+          vid.muted = true;
+        } catch(e) {}
       }
       clearProgress(i);
     }
@@ -1936,18 +1882,34 @@
       setTimeout(() => el.classList.remove('show'), 600);
     }
 
-    // ── Progress simulation ──
+    // ── Progress timeline ──
     function startProgress(i) {
       clearProgress(i);
-      let p = 0;
+      const vid = document.getElementById('vid-' + i);
       const el = document.getElementById('prog-' + i);
-      progressTimers[i] = setInterval(() => {
-        p += 0.5;
-        if (el) el.style.width = Math.min(p, 100) + '%';
-        if (p >= 100) { clearProgress(i); if (loopSet[i] !== false) startProgress(i); }
-      }, 150);
+      if (!vid || !el) return;
+      
+      const updateProgress = () => {
+        try {
+          if (vid.duration && !isNaN(vid.duration)) {
+            const percent = (vid.currentTime / vid.duration) * 100;
+            el.style.width = percent + '%';
+          }
+        } catch(e) {}
+      };
+      
+      vid.addEventListener('timeupdate', updateProgress);
+      progressTimers[i] = updateProgress;
     }
-    function clearProgress(i) { clearInterval(progressTimers[i]); }
+    function clearProgress(i) { 
+      try {
+        const vid = document.getElementById('vid-' + i);
+        if (vid && progressTimers[i]) {
+          vid.removeEventListener('timeupdate', progressTimers[i]);
+        }
+        delete progressTimers[i];
+      } catch(e) {}
+    }
     const loopSet = {};
     function toggleLoop(i) {
       loopSet[i] = loopSet[i] === false ? true : false;
@@ -2030,10 +1992,13 @@
           showToast('Video saved permanently!');
           const btn = document.getElementById('saveBtn-' + i);
           if (btn) btn.classList.add('saved');
+          // Clear saved videos cache
+          sessionStorage.removeItem('savedVideos');
         } else {
           showToast('Video unsaved');
           const btn = document.getElementById('saveBtn-' + i);
           if (btn) btn.classList.remove('saved');
+          sessionStorage.removeItem('savedVideos');
         }
       } catch (e) {
         showToast('Failed to save video');
@@ -2071,7 +2036,7 @@
         if (c.avatar) {
           avatarHtml = `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
         } else {
-          const initials = c.username.slice(0, 2).toUpperCase();
+          const initials = (c.name || c.username).slice(0, 2).toUpperCase();
           avatarHtml = initials;
         }
 
@@ -2079,7 +2044,7 @@
     <div class="comment-item">
       <div class="c-av">${avatarHtml}</div>
       <div class="c-body">
-        <div class="c-name">${c.username}</div>
+        <div class="c-name">${c.name || c.username}</div>
         <div class="c-text" id="ctext-${c.id}">${c.text}</div>
       </div>
       ${c.username === userData.username ? `
@@ -2243,11 +2208,11 @@
     // ── Mouse Wheel Control ──
     let lastWheelTime = 0;
     feedWrap.addEventListener('wheel', (e) => {
-      if (isTransitioning) return;
+      if (isTransitioning || scrollThrottle) return;
 
       e.preventDefault();
       const now = Date.now();
-      if (now - lastWheelTime < 600) return;
+      if (now - lastWheelTime < 800) return;
 
       lastWheelTime = now;
       if (e.deltaY > 30) {

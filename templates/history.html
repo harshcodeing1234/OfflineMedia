@@ -1474,11 +1474,12 @@
         ${v.filename ? `<video id="vid-${i}" style="width:100%;height:100%;object-fit:contain" src="/cache/${v.filename}" loop preload="auto" playsinline webkit-playsinline muted></video>` : `<div class="video-placeholder">${emoji}</div>`}
       </div>
       <div class="progress-bar"><div class="progress-fill" id="prog-${i}"></div></div>
+      <div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;color:#10b981;border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;gap:6px;z-index:10"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Watched</div>
       <div class="video-overlay">
         <div class="video-info">
           <div class="video-avatar" id="videoAvatar-${i}"></div>
           <div class="video-details">
-            <div class="video-user">${userData.username}</div>
+            <div class="video-user">${userData.name || userData.username}</div>
             <div class="video-title">${v.platform}</div>
           </div>
         </div>
@@ -1589,11 +1590,12 @@
         ${v.filename ? `<video id="vid-${i}" style="width:100%;height:100%;object-fit:contain" src="/cache/${v.filename}" loop preload="auto" playsinline webkit-playsinline muted></video>` : `<div class="video-placeholder">${emoji}</div>`}
       </div>
       <div class="progress-bar"><div class="progress-fill" id="prog-${i}"></div></div>
+      <div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;color:#10b981;border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;gap:6px;z-index:10"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Watched</div>
       <div class="video-overlay">
         <div class="video-info">
           <div class="video-avatar" id="videoAvatar-${i}"></div>
           <div class="video-details">
-            <div class="video-user">${userData.username}</div>
+            <div class="video-user">${userData.name || userData.username}</div>
             <div class="video-title">${v.platform} video</div>
           </div>
         </div>
@@ -1691,8 +1693,13 @@
     }
 
     // ── Swipe Navigation ──
+    let scrollThrottle = null;
     function goToSlide(index) {
       if (isTransitioning) return;
+      
+      // Throttle rapid scrolling
+      if (scrollThrottle) return;
+      scrollThrottle = setTimeout(() => scrollThrottle = null, 100);
 
       // Find visible slides
       const visibleSlides = [];
@@ -1715,14 +1722,19 @@
       if (targetIdx === activeVideoIdx) return;
 
       isTransitioning = true;
-      pauseVideo(activeVideoIdx);
+      
+      try {
+        pauseVideo(activeVideoIdx);
+      } catch(e) {}
 
       activeVideoIdx = targetIdx;
       const container = document.getElementById('feedContainer');
       container.style.transform = `translateY(-${targetPos * 100}vh)`;
 
       setTimeout(() => {
-        startVideo(targetIdx);
+        try {
+          startVideo(targetIdx);
+        } catch(e) {}
         isTransitioning = false;
       }, 350);
     }
@@ -1805,8 +1817,10 @@
       playing[i] = false;
       const vid = document.getElementById('vid-' + i);
       if (vid) {
-        vid.pause();
-        vid.muted = true;
+        try {
+          vid.pause();
+          vid.muted = true;
+        } catch(e) {}
       }
       clearProgress(i);
     }
@@ -1827,18 +1841,34 @@
       setTimeout(() => el.classList.remove('show'), 600);
     }
 
-    // ── Progress simulation ──
+    // ── Progress timeline ──
     function startProgress(i) {
       clearProgress(i);
-      let p = 0;
+      const vid = document.getElementById('vid-' + i);
       const el = document.getElementById('prog-' + i);
-      progressTimers[i] = setInterval(() => {
-        p += 0.5;
-        if (el) el.style.width = Math.min(p, 100) + '%';
-        if (p >= 100) { clearProgress(i); if (loopSet[i] !== false) startProgress(i); }
-      }, 150);
+      if (!vid || !el) return;
+      
+      const updateProgress = () => {
+        try {
+          if (vid.duration && !isNaN(vid.duration)) {
+            const percent = (vid.currentTime / vid.duration) * 100;
+            el.style.width = percent + '%';
+          }
+        } catch(e) {}
+      };
+      
+      vid.addEventListener('timeupdate', updateProgress);
+      progressTimers[i] = updateProgress;
     }
-    function clearProgress(i) { clearInterval(progressTimers[i]); }
+    function clearProgress(i) { 
+      try {
+        const vid = document.getElementById('vid-' + i);
+        if (vid && progressTimers[i]) {
+          vid.removeEventListener('timeupdate', progressTimers[i]);
+        }
+        delete progressTimers[i];
+      } catch(e) {}
+    }
     const loopSet = {};
     function toggleLoop(i) {
       loopSet[i] = loopSet[i] === false ? true : false;
@@ -1962,7 +1992,7 @@
         if (c.avatar) {
           avatarHtml = `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
         } else {
-          const initials = c.username.slice(0, 2).toUpperCase();
+          const initials = (c.name || c.username).slice(0, 2).toUpperCase();
           avatarHtml = initials;
         }
 
@@ -1970,7 +2000,7 @@
     <div class="comment-item">
       <div class="c-av">${avatarHtml}</div>
       <div class="c-body">
-        <div class="c-name">${c.username}</div>
+        <div class="c-name">${c.name || c.username}</div>
         <div class="c-text" id="ctext-${c.id}">${c.text}</div>
       </div>
       ${c.username === userData.username ? `
@@ -2134,11 +2164,11 @@
     // ── Mouse Wheel Control ──
     let lastWheelTime = 0;
     feedWrap.addEventListener('wheel', (e) => {
-      if (isTransitioning) return;
+      if (isTransitioning || scrollThrottle) return;
 
       e.preventDefault();
       const now = Date.now();
-      if (now - lastWheelTime < 600) return;
+      if (now - lastWheelTime < 800) return;
 
       lastWheelTime = now;
       if (e.deltaY > 30) {
