@@ -196,7 +196,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             if scrape.total_videos > 0:
                 scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
             safe_commit(db)
-            log_to_scrape(scrape, f"✓ Already exists: {filename}", db)
+            log_to_scrape(scrape, f"✓ Already exists: {filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
             check_and_complete_scrape(scrape_id, db, Scrape)
             return
         
@@ -247,8 +247,11 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 except Exception as e:
                     print(f"Download failed for {url}: {e}")
                     video.status = 'failed'
+                    scrape.downloaded_videos += 1
+                    if scrape.total_videos > 0:
+                        scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
                     safe_commit(db)
-                    log_to_scrape(scrape, f"✗ Failed: {filename} - {str(e)[:50]}", db)
+                    log_to_scrape(scrape, f"✗ Failed: {filename} - {str(e)[:50]} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
                     check_and_complete_scrape(scrape_id, db, Scrape)
                     return
             
@@ -273,6 +276,9 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                         pass
                     video.status = 'skipped'
                     db.session.delete(video)
+                    scrape.downloaded_videos += 1
+                    if scrape.total_videos > 0:
+                        scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
                 else:
                     # New video, keep it
                     video.filename = downloaded_filename
@@ -284,8 +290,11 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                     log_to_scrape(scrape, f"✓ Downloaded: {video.filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
             else:
                 video.status = 'failed'
+                scrape.downloaded_videos += 1
+                if scrape.total_videos > 0:
+                    scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
                 print(f"✗ Failed: {url}")
-                log_to_scrape(scrape, f"✗ Failed: {filename}", db)
+                log_to_scrape(scrape, f"✗ Failed: {filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
             
             safe_commit(db)
             
@@ -306,8 +315,11 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                         
         except Exception as e:
             video.status = 'failed'
+            scrape.downloaded_videos += 1
+            if scrape.total_videos > 0:
+                scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
             safe_commit(db)
-            log_to_scrape(scrape, f"✗ Error: {filename} - {str(e)[:50]}", db)
+            log_to_scrape(scrape, f"✗ Error: {filename} - {str(e)[:50]} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
             check_and_complete_scrape(scrape_id, db, Scrape)
 
 
