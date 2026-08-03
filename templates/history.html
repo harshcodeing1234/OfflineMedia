@@ -146,6 +146,18 @@
       font-size: 18px;
       width: 22px;
       text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .profile-area {
@@ -462,13 +474,28 @@
     }
 
     .action-btn.liked .action-icon svg {
-      fill: #ef4444;
-      stroke: #ef4444;
+      fill: #ff3040;
+      stroke: #ff3040;
+    }
+
+    .action-btn.liked .action-icon {
+      animation: igHeartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
     .action-btn.saved .action-icon svg {
-      fill: #10b981;
-      stroke: #10b981;
+      fill: #ffffff;
+      stroke: #ffffff;
+    }
+
+    .action-btn.saved .action-icon {
+      animation: igHeartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes igHeartPop {
+      0% { transform: scale(1); }
+      35% { transform: scale(0.7); }
+      70% { transform: scale(1.2); }
+      100% { transform: scale(1); }
     }
 
     /* Play/Pause center */
@@ -476,16 +503,43 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 56px;
+      transform: translate(-50%, -50%) scale(0.6);
+      font-size: 64px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity .3s;
-      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.9);
+      text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      z-index: 10;
+      color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .play-pause.show {
-      opacity: 1;
+    @keyframes igPlayPause {
+      0% {
+        transform: translate(-50%, -50%) scale(0.6);
+        opacity: 0;
+      }
+      15% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.9;
+      }
+      30% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.9;
+      }
+      80% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.9;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0;
+      }
+    }
+
+    .play-pause.animate-ig {
+      animation: igPlayPause 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
     /* Double tap heart */
@@ -496,19 +550,40 @@
       opacity: 0;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0);
-      transition: all .6s cubic-bezier(.34, 1.56, .64, 1);
+      transform: translate(-50%, -50%) scale(0) rotate(-10deg);
       z-index: 10;
+      color: #ff3040;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .dbl-heart.pop {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1.2);
+    @keyframes igDblHeart {
+      0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+        opacity: 0;
+      }
+      15% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(-10deg);
+        opacity: 0.9;
+      }
+      30% {
+        transform: translate(-50%, -50%) scale(1) rotate(-10deg);
+        opacity: 0.9;
+      }
+      85% {
+        transform: translate(-50%, -50%) scale(1) rotate(-10deg);
+        opacity: 0.9;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(0.6) rotate(-10deg);
+        opacity: 0;
+      }
     }
 
-    .dbl-heart.fade {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(1.6);
+    .dbl-heart.animate-ig {
+      animation: igDblHeart 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
     /* Progress bar */
@@ -1236,12 +1311,13 @@
       </div>
     </div>
     <div class="nav-links">
-      <a class="nav-item" href="/dashboard"><span class="nav-icon"></span> Dashboard</a>
-      <a class="nav-item" href="/scrapp"><span class="nav-icon"></span> My Scrapp</a>
-      <a class="nav-item" href="/play"><span class="nav-icon"></span> Play</a>
-      <a class="nav-item" href="/saved"><span class="nav-icon"></span> Saved</a>
-      <a class="nav-item active" href="/history"><span class="nav-icon"></span> History</a>
-      <a class="nav-item" href="/polling"><span class="nav-icon"></span> Polling</a>
+      <a class="nav-item" href="/dashboard"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span> Dashboard</a>
+      <a class="nav-item" href="/scrapp"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="22"/></svg></span> My Scrapp</a>
+      <a class="nav-item" href="/play"><span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></span> Play</a>
+      <a class="nav-item" href="/saved"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Saved</a>
+      <a class="nav-item active" href="/history"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg></span> History</a>
+      <a class="nav-item" href="/polling" id="pollingSidebarLink" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span> Polling</a>
+      <a class="nav-item" href="/admin" id="adminSidebarLink" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18v2H3z"/></svg></span> Admin Panel</a>
     </div>
   </nav>
 
@@ -1340,7 +1416,17 @@
     }
 
     function updateUserUI() {
-      // No UI update needed since profile is removed from play page
+      if (userData && userData.is_admin) {
+        const link = document.getElementById('adminSidebarLink');
+        if (link) link.style.display = 'flex';
+        const pollingLink = document.getElementById('pollingSidebarLink');
+        if (pollingLink) pollingLink.style.display = 'flex';
+        
+        const mobileAdminLink = document.getElementById('adminMobileLink');
+        if (mobileAdminLink) mobileAdminLink.style.display = 'flex';
+        const mobilePollingLink = document.getElementById('pollingMobileLink');
+        if (mobilePollingLink) mobilePollingLink.style.display = 'flex';
+      }
     }
 
     // ── Load videos ──
@@ -1515,8 +1601,12 @@
           <span class="action-label">Loop</span>
         </div>
       </div>
-      <div class="play-pause" id="pp-${i}">⏸</div>
-      <div class="dbl-heart" id="dblH-${i}">❤️</div>`;
+      <div class="play-pause" id="pp-${i}">
+        <svg viewBox="0 0 24 24" fill="white" width="64" height="64"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+      </div>
+      <div class="dbl-heart" id="dblH-${i}">
+        <svg viewBox="0 0 24 24" fill="white" width="80" height="80"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>`;
 
         // Action button handlers
         slide.querySelectorAll('[data-action]').forEach(btn => {
@@ -1623,8 +1713,12 @@
           <span class="action-label">Loop</span>
         </div>
       </div>
-      <div class="play-pause" id="pp-${i}">⏸</div>
-      <div class="dbl-heart" id="dblH-${i}">❤️</div>`;
+      <div class="play-pause" id="pp-${i}">
+        <svg viewBox="0 0 24 24" fill="white" width="64" height="64"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+      </div>
+      <div class="dbl-heart" id="dblH-${i}">
+        <svg viewBox="0 0 24 24" fill="white" width="80" height="80"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>`;
 
         // Action button handlers
         slide.querySelectorAll('[data-action]').forEach(btn => {
@@ -1822,9 +1916,13 @@
     function showPP(i, icon, show) {
       const el = document.getElementById('pp-' + i);
       if (!el) return;
-      el.textContent = icon;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 600);
+      el.innerHTML = icon === '▶' 
+        ? `<svg viewBox="0 0 24 24" fill="white" width="64" height="64" style="filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`
+        : `<svg viewBox="0 0 24 24" fill="white" width="64" height="64" style="filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+      
+      el.classList.remove('animate-ig');
+      void el.offsetWidth; // Trigger reflow
+      el.classList.add('animate-ig');
     }
 
     // ── Progress timeline ──
@@ -1873,9 +1971,10 @@
         toggleLike(i);
       }
       const h = document.getElementById('dblH-' + i);
-      h.className = 'dbl-heart pop';
-      setTimeout(() => { h.className = 'dbl-heart fade'; }, 600);
-      setTimeout(() => { h.className = 'dbl-heart'; }, 1200);
+      if (!h) return;
+      h.classList.remove('animate-ig');
+      void h.offsetWidth; // Trigger reflow
+      h.classList.add('animate-ig');
     }
 
     async function toggleLike(i) {
@@ -2148,12 +2247,16 @@
         <span>Dashboard</span>
       </a>
       <a href="/scrapp" class="bottom-nav-item">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <span>Scrap</span>
+        <svg viewBox="0 0 24 24"><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="22"/></svg>
+        <span>My Scrapp</span>
       </a>
       <a href="/play" class="bottom-nav-item">
         <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         <span>Play</span>
+      </a>
+      <a href="/history" class="bottom-nav-item active">
+        <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        <span>History</span>
       </a>
       <button class="bottom-nav-item" onclick="toggleMobileMenu()">
         <div class="bottom-nav-avatar" id="mobileAvatar">?</div>
@@ -2162,22 +2265,27 @@
     </div>
   </nav>
 
+  <!-- Mobile Profile Menu -->
   <div class="mobile-profile-menu" id="mobileProfileMenu">
     <button class="mobile-menu-item" onclick="window.location.href='/saved'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
       Saved
     </button>
-    <button class="mobile-menu-item" onclick="window.location.href='/history'">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      History
+    <button class="mobile-menu-item" onclick="window.location.href='/polling'" id="pollingMobileLink" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Polling
+    </button>
+    <button class="mobile-menu-item" onclick="window.location.href='/admin'" id="adminMobileLink" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18v2H3z"/></svg>
+      Admin
     </button>
     <button class="mobile-menu-item" onclick="openSettings()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"/></svg>
-      Settings
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Setting
     </button>
     <div class="mobile-menu-divider"></div>
     <button class="mobile-menu-item danger" onclick="window.location.href='/logout'">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14l5-5-5-5m5 5H9"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Logout
     </button>
   </div>

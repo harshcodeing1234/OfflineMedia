@@ -32,7 +32,6 @@ PAGE_LOAD_TIMEOUT = 45
 def create_driver(profile_name):
     """Create Chrome driver (Termux + PC compatible)"""
 
-
     options = Options()
 
     # Chrome browser path
@@ -111,20 +110,106 @@ def safe_load_page(driver, url, retries=MAX_RETRIES):
     return False
 
 
+def load_cookies_from_file(driver, platform):
+    """Dynamically read selenium_cookies.txt and inject cookies into Selenium session for the active domain"""
+    cookie_file = "selenium_cookies.txt"  # separate file — yt-dlp never touches this
+    if not os.path.exists(cookie_file):
+        print(f"[Cookie Injection] No cookies.txt found in root directory.")
+        return
+
+    # FIX #5: Use the correct domain URL for each platform (was always youtube for non-instagram)
+    if platform == "instagram":
+        domain_url = "https://www.instagram.com"
+    elif platform == "facebook":
+        domain_url = "https://www.facebook.com"
+    else:
+        domain_url = "https://www.youtube.com"
+
+    try:
+        driver.get(domain_url)
+        time.sleep(3)
+        
+        cookies_added = 0
+        with open(cookie_file, "r", encoding="utf-8") as f:
+            for line in f:
+                raw_line = line.strip()
+                if not raw_line:
+                    continue
+                
+                is_httponly = False
+                if raw_line.startswith("#HttpOnly_"):
+                    is_httponly = True
+                    raw_line = raw_line[len("#HttpOnly_"):]
+                elif raw_line.startswith("#"):
+                    continue
+                
+                # Handle both tab-separated (Cookie-Editor) and space-separated (yt-dlp) formats
+                if "\t" in raw_line:
+                    parts = raw_line.split("\t")
+                else:
+                    parts = raw_line.split()
+                if len(parts) < 7:
+                    continue
+                # yt-dlp space-split may over-split value if it contains spaces — rejoin from index 6
+                if len(parts) > 7:
+                    parts = parts[:6] + [" ".join(parts[6:])]
+                
+                cookie_domain = parts[0]
+                if platform in cookie_domain:
+                    domain_val = cookie_domain
+                    cookie = {
+                        'name': parts[5],
+                        'value': parts[6],
+                        'domain': domain_val,
+                        'path': parts[2],
+                        'secure': parts[3] == 'TRUE',
+                        'httpOnly': is_httponly
+                    }
+                    
+                    try:
+                        expiry = int(parts[4])
+                        if expiry > 0:
+                            cookie['expiry'] = expiry
+                    except:
+                        pass
+                    
+                    try:
+                        driver.add_cookie(cookie)
+                        cookies_added += 1
+                    except Exception:
+                        if domain_val.startswith('.'):
+                            try:
+                                cookie['domain'] = domain_val[1:]
+                                driver.add_cookie(cookie)
+                                cookies_added += 1
+                            except:
+                                pass
+        
+        if cookies_added > 0:
+            print(f"[Cookie Injection] Successfully injected {cookies_added} cookies for {platform}.")
+            driver.refresh()
+            time.sleep(3)
+    except Exception as e:
+        print(f"[Cookie Injection] Error injecting cookies: {e}")
+
+
 def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
     """Scrape Instagram from explore page or hashtags with rate limiting"""    
     driver = None
     all_links = set()
     
+    # FIX #1: Normalize hashtags first, then open the try block at function level
+    # (was accidentally indented inside elif, so driver was never created)
     if hashtags is None:
         hashtags = []
     elif isinstance(hashtags, str):
         hashtags = [hashtags] if hashtags else []
-    
-    hashtags = [h for h in hashtags if h]
-    
-    try:
+
+    hashtags = [h for h in hashtags if h]  # moved to correct indentation level
+
+    try:  # try block now correctly at function body level
         driver = create_driver("instagram")
+        load_cookies_from_file(driver, "instagram")
         
         if hashtags:
             # Divide quantity equally among hashtags
@@ -146,7 +231,7 @@ def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
                 time.sleep(5)
                 cookies = driver.get_cookies()
                 if any(c['name'] == 'sessionid' for c in cookies):
-                    save_cookies(driver)
+                    save_cookies(driver, path="selenium_cookies.txt")
                 
                 start_time = time.time()
                 hashtag_links = set()
@@ -192,7 +277,7 @@ def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
             time.sleep(5)
             cookies = driver.get_cookies()
             if any(c['name'] == 'sessionid' for c in cookies):
-                save_cookies(driver)
+                save_cookies(driver, path="selenium_cookies.txt")
             
             start_time = time.time()
             
@@ -244,15 +329,25 @@ def scrape_youtube(duration_min, hashtags=None, quantity=100, stop_flag=None):
     driver = None
     all_links = set()
     
+    # FIX #2: Normalize hashtags first, then open the try block at function level
+    # (driver = create_driver(...) was accidentally indented under hashtag filter line)
     if hashtags is None:
         hashtags = []
     elif isinstance(hashtags, str):
         hashtags = [hashtags] if hashtags else []
-    
+
     hashtags = [h for h in hashtags if h]
-    
-    try:
+
+    try:  # try block now correctly at function body level
+        # Clear cached YouTube profile so cookies.txt account is used, not old saved session
+        import shutil
+        yt_profile = Path.home() / "selenium-profiles" / "youtube"
+        if yt_profile.exists():
+            shutil.rmtree(yt_profile)
+        yt_profile.mkdir(parents=True, exist_ok=True)
+
         driver = create_driver("youtube")
+        load_cookies_from_file(driver, "youtube")
         
         if hashtags:
             # Divide quantity equally among hashtags
@@ -361,21 +456,27 @@ def scrape_facebook(duration_min, hashtags=None, quantity=100, stop_flag=None):
     
     driver = None
     all_links = set()
-    
-    def refresh_watch():
-        driver.get("https://www.facebook.com/watch")
-        try:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "a")))
-        except:
-            pass
-        time.sleep(2)
-        for _ in range(3):
-            driver.execute_script("window.scrollBy(0, 1500);")
-            time.sleep(0.2)
-    
+
+    # FIX #3 & #4: Move try block to function level so driver is created unconditionally.
+    # Also move refresh_watch() definition AFTER driver is assigned, and pass driver
+    # as a parameter so it is always in scope (was an UnboundLocalError closure bug).
     try:
         driver = create_driver("facebook")
-        refresh_watch()
+        load_cookies_from_file(driver, "facebook")
+
+        # FIX #4: refresh_watch now receives driver as argument — no closure scope issue
+        def refresh_watch(driver):
+            driver.get("https://www.facebook.com/watch")
+            try:
+                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "a")))
+            except:
+                pass
+            time.sleep(2)
+            for _ in range(3):
+                driver.execute_script("window.scrollBy(0, 1500);")
+                time.sleep(0.2)
+
+        refresh_watch(driver)
         
         start_time = time.time()
         

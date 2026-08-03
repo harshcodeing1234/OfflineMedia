@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OfflineMedia – Admin Panel</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='100%' style='stop-color:%23764ba2'/></linearGradient></defs><rect width='100' height='100' rx='16' fill='url(%23g)'/><path d='M35 25 L75 50 L35 75 Z' fill='%23fff'/></svg>">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --card: #1a1a24;
+      --card2: #1e1e2a;
+      --border: rgba(255, 255, 255, 0.07);
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --text: #f0f0f8;
+      --muted: #6b6b80;
+      --radius: 16px;
+      --nav-w: 240px;
+      --header-h: 64px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: var(--nav-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 101;
+      transition: transform .3s;
+    }
+
+    .logo-area {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-left: 10px solid #fff;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      margin-left: 2px;
+    }
+
+    .logo-text {
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .logo-text span {
+      color: var(--accent2);
+    }
+
+    .nav-links {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .25s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.1));
+      color: var(--text);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+
+    .nav-icon {
+      font-size: 18px;
+      width: 22px;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .profile-area {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+      position: relative;
+    }
+
+    .profile-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      width: 100%;
+      transition: all .25s;
+    }
+
+    .profile-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .profile-name {
+      font-size: 13px;
+      font-weight: 600;
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .profile-dropdown {
+      position: absolute;
+      bottom: 80px;
+      left: 12px;
+      right: 12px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: none;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .profile-dropdown.open {
+      display: block;
+    }
+
+    .dd-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .dd-item:hover {
+      background: var(--surface);
+    }
+
+    .dd-item.danger {
+      color: #f87171;
+    }
+
+    .dd-divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    .main {
+      margin-left: var(--nav-w);
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .header {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-title {
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .content {
+      flex: 1;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Stats Grid */
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .stat-lbl {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    /* Scraps Layout */
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media(max-width: 1024px) {
+      .admin-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .3s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b80' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #9333ea);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: box-shadow .2s;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
+    }
+
+    /* Scraps grid */
+    .scraps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .scrap-row {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color .2s;
+    }
+
+    .scrap-row:hover {
+      border-color: var(--accent);
+    }
+
+    .scrap-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .scrap-row-title {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .scrap-row-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all .25s;
+    }
+
+    .stop-btn {
+      background: rgba(251, 146, 60, 0.1);
+      color: #fb923c;
+      border: 1px solid rgba(251, 146, 60, 0.2);
+    }
+
+    .stop-btn:hover {
+      background: rgba(251, 146, 60, 0.25);
+    }
+
+    .del-btn {
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .del-btn:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .log-btn {
+      background: rgba(6, 182, 212, 0.1);
+      color: #22d3ee;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .log-btn:hover {
+      background: rgba(6, 182, 212, 0.25);
+    }
+
+    .scrap-row-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progress-text-val {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+    }
+
+    .empty-state .e-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 99;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 14px;
+      z-index: 500;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* Modal */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+      width: 100%;
+      max-width: 440px;
+      animation: modalIn .3s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .modal.logs-modal {
+      max-width: 600px;
+    }
+
+    .modal-title {
+      font-family: inherit;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close {
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--muted);
+    }
+
+    .modal-close:hover {
+      color: #fff;
+    }
+
+    .logs-container {
+      background: #09090d;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+      color: #a78bfa;
+      white-space: pre-wrap;
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media(max-width:768px) {
+      .sidebar {
+        display: none !important;
+      }
+
+      .sidebar-overlay {
+        display: none !important;
+      }
+
+      .main {
+        margin-left: 0;
+        padding-bottom: calc(70px + env(safe-area-inset-bottom));
+      }
+
+      .header {
+        display: flex !important;
+        padding: 0 16px;
+        height: 56px;
+      }
+
+      .menu-btn {
+        display: none !important;
+      }
+
+      .content {
+        padding: 16px;
+        padding-top: 20px;
+      }
+
+      .admin-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .admin-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .stat-card {
+        padding: 12px;
+      }
+
+      .stat-val {
+        font-size: 20px;
+      }
+
+      .panel-card {
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      .scrap-row-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .scrap-row-actions {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+      }
+
+      .scrap-row-actions .action-btn {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      .scrap-row-meta {
+        gap: 8px 12px;
+      }
+
+      .modal {
+        padding: 20px;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 100% !important;
+      }
+
+      .modal.logs-modal {
+        max-width: 100% !important;
+      }
+
+      .logs-container {
+        height: 240px;
+        padding: 12px;
+      }
+    }
+
+    /* MOBILE BOTTOM NAV */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+      height: calc(65px + env(safe-area-inset-bottom));
+      z-index: 1000;
+    }
+
+    .bottom-nav-items {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      transition: color .2s;
+      flex: 1;
+      max-width: 80px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .bottom-nav-item svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .bottom-nav-item.active {
+      color: #00ffcc;
+    }
+
+    @media (max-width: 768px) {
+      .bottom-nav {
+        display: block;
+      }
+    }
+
+    .bottom-nav-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .mobile-profile-menu {
+      display: none;
+      position: fixed;
+      bottom: 70px;
+      right: 10px;
+      background: #1e1e2a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      min-width: 160px;
+      z-index: 1001;
+    }
+
+    .mobile-profile-menu.open {
+      display: block;
+    }
+
+    .mobile-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .2s;
+      color: var(--text);
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .mobile-menu-item:hover {
+      background: var(--surface);
+    }
+
+    .mobile-menu-item.danger {
+      color: #f87171;
+    }
+
+    .mobile-menu-divider {
+      height: 1px;
+      background: var(--border);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="logo-area">
+      <div class="logo-mark">
+        <div class="logo-icon"></div>
+        <div class="logo-text">Offline<span>Media</span></div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a class="nav-item" href="/dashboard"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span> Dashboard</a>
+      <a class="nav-item" href="/scrapp"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="22"/></svg></span> My Scrapp</a>
+      <a class="nav-item" href="/play"><span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></span> Play</a>
+      <a class="nav-item" href="/saved"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Saved</a>
+      <a class="nav-item" href="/history"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg></span> History</a>
+      <a class="nav-item" href="/polling" id="pollingSidebarLink" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span> Polling</a>
+      <a class="nav-item active" href="/admin" id="adminSidebarLink" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18v2H3z"/></svg></span> Admin Panel</a>
+    </div>
+    <div class="profile-area">
+      <button class="profile-btn" onclick="toggleDropdown()">
+        <div class="avatar" id="avatarEl">?</div>
+        <span class="profile-name" id="profileName">User</span>
+        <span>▾</span>
+      </button>
+      <div class="profile-dropdown" id="profileDropdown">
+        <div class="dd-item danger" onclick="doLogout()"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="vertical-align:middle;margin-right:8px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="header">
+      <button class="menu-btn" onclick="openSidebar()">☰</button>
+      <span class="header-title">Admin Dashboard</span>
+      <div class="avatar" id="headerAvatar">?</div>
+    </header>
+    <div class="content">
+      <!-- Admin Stats Summary -->
+      <div class="admin-stats">
+        <div class="stat-card">
+          <span class="stat-val" id="stat_scrapes">0</span>
+          <span class="stat-lbl">Total Scrapes</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" id="stat_videos">0</span>
+          <span class="stat-lbl">Cached Videos</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" id="stat_cache_size">0 MB</span>
+          <span class="stat-lbl">Cache Folder Size</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" id="stat_likes">0</span>
+          <span class="stat-lbl">Total Likes</span>
+        </div>
+      </div>
+
+      <!-- Main Admin Panel Content -->
+      <div class="admin-layout">
+        <!-- Scrape Creation Form -->
+        <div class="panel-card">
+          <div class="panel-card-title">Create New Scrap Session</div>
+          
+          <div class="form-group">
+            <label>Target Platforms</label>
+            <select id="platforms" onchange="updateHashtagInputs()">
+              <option value="all">All Platforms (Instagram & YouTube)</option>
+              <option value="instagram">Instagram</option>
+              <option value="youtube">YouTube</option>
+              <option value="instagram & youtube">Instagram & YouTube</option>
+            </select>
+          </div>
+
+          <div id="hashtagInputs">
+            <div class="form-group">
+              <label>Instagram Hashtags (comma-separated, optional)</label>
+              <input type="text" id="hashtag_instagram" placeholder="e.g. reels, comedy, coding">
+            </div>
+            <div class="form-group">
+              <label>YouTube Hashtags (comma-separated, optional)</label>
+              <input type="text" id="hashtag_youtube" placeholder="e.g. shorts, tech, shortsfeed">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Videos Quantity (per platform)</label>
+            <input type="number" id="quantity" value="10" min="1" max="100">
+          </div>
+
+          <div class="form-group">
+            <label>Scrap Duration (minutes)</label>
+            <input type="number" id="duration" value="10" min="1" max="120">
+          </div>
+
+          <div class="form-group">
+            <label>Time To Live (TTL - hours)</label>
+            <input type="number" id="ttl" value="24" min="1" max="168">
+            <span style="font-size: 10px; color: var(--muted)">Cached video files on the server will automatically delete after TTL expires.</span>
+          </div>
+
+          <button class="btn-primary" onclick="createScrap()">Start Scraping</button>
+        </div>
+
+        <!-- Scrapes List / Active tasks -->
+        <div class="panel-card">
+          <div class="panel-card-title">Scraping Runs & Background Jobs</div>
+          <div class="scraps-list" id="scrapsList">
+            <div class="empty-state">
+              <div class="e-icon">📋</div>
+              <p>No runs registered in system.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs Modal -->
+  <div class="overlay" id="logsModal">
+    <div class="modal logs-modal">
+      <div class="modal-title">
+        <span>Scraper Console Logs</span>
+        <span class="modal-close" onclick="closeLogsModal()">×</span>
+      </div>
+      <div class="logs-container" id="logsContainer">Logs loading...</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-items">
+      <a href="/dashboard" class="bottom-nav-item">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="/scrapp" class="bottom-nav-item">
+        <svg viewBox="0 0 24 24"><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="22"/></svg>
+        <span>My Scrapp</span>
+      </a>
+      <a href="/play" class="bottom-nav-item">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Play</span>
+      </a>
+      <a href="/history" class="bottom-nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        <span>History</span>
+      </a>
+      <button class="bottom-nav-item active" onclick="toggleMobileMenu()">
+        <div class="bottom-nav-avatar" id="mobileAvatar">?</div>
+        <span>Profile</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Profile Menu -->
+  <div class="mobile-profile-menu" id="mobileProfileMenu">
+    <button class="mobile-menu-item" onclick="window.location.href='/saved'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      Saved
+    </button>
+    <button class="mobile-menu-item" onclick="window.location.href='/polling'" id="pollingMobileLink" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Polling
+    </button>
+    <button class="mobile-menu-item" onclick="window.location.href='/admin'" id="adminMobileLink" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18v2H3z"/></svg>
+      Admin
+    </button>
+    <button class="mobile-menu-item" onclick="window.location.href='/dashboard?openSettings=true'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Setting
+    </button>
+    <div class="mobile-menu-divider"></div>
+    <button class="mobile-menu-item danger" onclick="window.location.href='/logout'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14l5-5-5-5m5 5H9"/></svg>
+      Logout
+    </button>
+  </div>
+
+  <script>
+    let userData = null;
+    let pollInterval = null;
+    let activeLogScrapId = null;
+    let logPollInterval = null;
+
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/user');
+        if (!res.ok) {
+          window.location.href = '/auth';
+          return;
+        }
+        userData = await res.json();
+        if (!userData.is_admin) {
+          window.location.href = '/dashboard';
+          return;
+        }
+        document.getElementById('adminSidebarLink').style.display = 'flex';
+        updateUserUI();
+        loadStats();
+        loadScraps();
+        pollInterval = setInterval(() => {
+          loadStats();
+          loadScraps();
+        }, 4000);
+      } catch (e) {
+        window.location.href = '/auth';
+      }
+    }
+
+    function updateUserUI() {
+      const avatar = userData.avatar;
+      const initials = (userData.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      
+      if (avatar) {
+        document.getElementById('avatarEl').innerHTML = `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        document.getElementById('headerAvatar').innerHTML = `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        const mobileAvatar = document.getElementById('mobileAvatar');
+        if (mobileAvatar) mobileAvatar.innerHTML = `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      } else {
+        document.getElementById('avatarEl').textContent = initials;
+        document.getElementById('headerAvatar').textContent = initials;
+        const mobileAvatar = document.getElementById('mobileAvatar');
+        if (mobileAvatar) mobileAvatar.textContent = initials;
+      }
+      document.getElementById('profileName').textContent = userData.name || userData.username;
+      
+      if (userData.is_admin) {
+        const link = document.getElementById('adminSidebarLink');
+        if (link) link.style.display = 'flex';
+        const pollingLink = document.getElementById('pollingSidebarLink');
+        if (pollingLink) pollingLink.style.display = 'flex';
+        
+        const mobileAdminLink = document.getElementById('adminMobileLink');
+        if (mobileAdminLink) mobileAdminLink.style.display = 'flex';
+        const mobilePollingLink = document.getElementById('pollingMobileLink');
+        if (mobilePollingLink) mobilePollingLink.style.display = 'flex';
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const stats = await res.json();
+        document.getElementById('stat_scrapes').textContent = stats.total_scraps;
+        document.getElementById('stat_videos').textContent = stats.total_videos;
+        document.getElementById('stat_cache_size').textContent = stats.cache_size_mb + ' MB';
+        document.getElementById('stat_likes').textContent = stats.total_likes;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadScraps() {
+      try {
+        const res = await fetch('/api/scrapes');
+        const scrapes = await res.json();
+        const container = document.getElementById('scrapsList');
+
+        if (!scrapes.length) {
+          container.innerHTML = `<div class="empty-state"><div class="e-icon">📋</div><p>No runs registered in system.</p></div>`;
+          return;
+        }
+
+        container.innerHTML = scrapes.map(s => {
+          const isDownloadingOrScraping = s.status === 'scraping' || s.status === 'downloading';
+          const progress = s.progress || 0;
+          
+          return `
+            <div class="scrap-row">
+              <div class="scrap-row-top">
+                <span class="scrap-row-title">Run #${s.id}</span>
+                <div class="scrap-row-actions">
+                  <button class="action-btn log-btn" onclick="openLogsModal(${s.id})">🔍 Logs</button>
+                  ${isDownloadingOrScraping ? `<button class="action-btn stop-btn" onclick="stopScrap(${s.id})">⏹ Stop</button>` : ''}
+                  <button class="action-btn del-btn" onclick="deleteScrap(${s.id})">🗑 Delete</button>
+                </div>
+              </div>
+              <div class="scrap-row-meta">
+                <span class="meta-chip">Platforms: ${s.platforms}</span>
+                <span class="meta-chip">⏱ Duration: ${s.duration}m</span>
+                <span class="meta-chip">⏳ TTL: ${s.ttl}h</span>
+                <span class="meta-chip">🎬 Videos: ${s.downloaded_videos}/${s.total_videos}</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" style="width: ${progress}%"></div>
+              </div>
+              <div class="progress-text-val">
+                <span>Status: <b>${s.status.toUpperCase()}</b></span>
+                <span>${progress}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function updateHashtagInputs() {
+      const platforms = document.getElementById('platforms').value;
+      const container = document.getElementById('hashtagInputs');
+      
+      let selectedPlatforms = [];
+      if (platforms === 'all') {
+        selectedPlatforms = ['instagram', 'youtube'];
+      } else {
+        selectedPlatforms = platforms.split('&').map(p => p.trim()).filter(p => p);
+      }
+      
+      container.innerHTML = selectedPlatforms.map(p => `
+        <div class="form-group">
+          <label>${p.charAt(0).toUpperCase() + p.slice(1)} Hashtags (comma-separated, optional)</label>
+          <input type="text" id="hashtag_${p}" placeholder="e.g. funny, travel, code">
+        </div>
+      `).join('');
+    }
+
+    async function createScrap() {
+      const platforms = document.getElementById('platforms').value;
+      const dur = parseInt(document.getElementById('duration').value) || 10;
+      const ttlVal = parseInt(document.getElementById('ttl').value) || 24;
+      const quantityVal = parseInt(document.getElementById('quantity').value) || 10;
+      
+      const hashtags = {};
+      let selectedPlatforms = platforms === 'all' ? ['instagram', 'youtube'] : platforms.split('&').map(p => p.trim()).filter(p => p);
+      selectedPlatforms.forEach(p => {
+        const input = document.getElementById(`hashtag_${p}`);
+        if (input && input.value.trim()) {
+          hashtags[p] = input.value.trim().split(',').map(h => h.trim().replace(/^#/, '')).filter(h => h);
+        }
+      });
+
+      try {
+        const res = await fetch('/api/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platforms: platforms, duration: dur, ttl: ttlVal, hashtags: hashtags, quantity: quantityVal })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Scrap session started successfully!');
+          loadScraps();
+        } else {
+          showToast('Error: ' + data.error);
+        }
+      } catch (e) {
+        showToast('Failed to connect to server');
+      }
+    }
+
+    async function stopScrap(id) {
+      if (!confirm('Stop this scrap run?')) return;
+      try {
+        const res = await fetch(`/api/scrape/${id}/stop`, { method: 'POST' });
+        if (res.ok) {
+          showToast('Run stopped');
+          loadScraps();
+        }
+      } catch (e) {
+        showToast('Failed to stop run');
+      }
+    }
+
+    async function deleteScrap(id) {
+      if (!confirm('Delete this scrap run and its files on the server?')) return;
+      try {
+        const res = await fetch(`/api/scrape/${id}/delete`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('Run deleted');
+          loadScraps();
+        }
+      } catch (e) {
+        showToast('Failed to delete run');
+      }
+    }
+
+    async function openLogsModal(id) {
+      activeLogScrapId = id;
+      document.getElementById('logsModal').classList.add('open');
+      document.getElementById('logsContainer').textContent = 'Loading logs...';
+      
+      await loadLogs();
+      if (logPollInterval) clearInterval(logPollInterval);
+      logPollInterval = setInterval(loadLogs, 2000);
+    }
+
+    function closeLogsModal() {
+      document.getElementById('logsModal').classList.remove('open');
+      if (logPollInterval) {
+        clearInterval(logPollInterval);
+        logPollInterval = null;
+      }
+      activeLogScrapId = null;
+    }
+
+    async function loadLogs() {
+      if (!activeLogScrapId) return;
+      try {
+        const res = await fetch(`/api/scrape-logs/${activeLogScrapId}`);
+        const data = await res.json();
+        const container = document.getElementById('logsContainer');
+        container.textContent = data.logs || 'No logs available for this run.';
+        container.scrollTop = container.scrollHeight;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function toggleDropdown() { document.getElementById('profileDropdown').classList.toggle('open'); }
+    document.addEventListener('click', e => { if (!e.target.closest('.profile-area')) document.getElementById('profileDropdown').classList.remove('open'); });
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+    function doLogout() { fetch('/logout').then(() => window.location.href = '/auth'); }
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileProfileMenu');
+      if (menu) menu.classList.toggle('open');
+    }
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('mobileProfileMenu');
+      const btn = e.target.closest('.bottom-nav-item');
+      if (menu && !menu.contains(e.target) && !btn) {
+        menu.classList.remove('open');
+      }
+    });
+
+    loadUser();
+  </script>
+</body>
+
+</html>

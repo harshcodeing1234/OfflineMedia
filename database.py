@@ -20,6 +20,16 @@ def init_db(app):
 
 def run_migrations():
     """Run all database migrations"""
+    # Migration: Add is_admin column
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text('ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0'))
+            conn.commit()
+        print("Added is_admin column")
+    except Exception as e:
+        if 'duplicate column' not in str(e).lower() and 'already exists' not in str(e).lower():
+            print(f"Migration warning: {e}")
+
     # Migration: Add started_at column
     try:
         with db.engine.connect() as conn:

@@ -10,6 +10,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     avatar = db.Column(db.String(200))
     password = db.Column(db.String(200), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     scrapes = db.relationship('Scrape', backref='user', lazy=True)
 
