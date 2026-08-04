@@ -33,3 +33,5 @@ selenium-profile-*/
 Thumbs.db
 cookies.txt
 img/instagram_img.jpg
+.env
+docs/

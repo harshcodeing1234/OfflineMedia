@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, session #type:ignore
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user #type:ignore
 from werkzeug.security import generate_password_hash, check_password_hash #type:ignore
@@ -14,7 +17,11 @@ from utils import safe_query_or_404, safe_list_query, safe_file_operation
 warnings.filterwarnings('ignore')
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_size': 20,
@@ -515,6 +522,18 @@ def delete_saved_video(saved_id):
 @login_required
 def serve_video(filename):
     return send_from_directory(CACHE_FOLDER, filename)
+
+@app.route('/sw.js')
+def serve_sw():
+    return send_from_directory(app.root_path, 'sw.js', mimetype='application/javascript')
+
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory(app.root_path, 'manifest.json', mimetype='application/json')
+
+@app.route('/icon.svg')
+def serve_icon():
+    return send_from_directory(app.root_path, 'icon.svg', mimetype='image/svg+xml')
 @app.route('/api/video/<path:filename>/watch', methods=['POST'])
 @login_required
 def mark_watched(filename):

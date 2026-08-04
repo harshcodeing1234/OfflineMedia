@@ -17,6 +17,8 @@
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
     rel="stylesheet">
 
+  <link rel="manifest" href="/manifest.json">
+
   <style>
     :root {
 
@@ -2692,9 +2694,17 @@
 
             if (!allVideos.length) {
 
-              hideLoading();
+              console.log('No videos on server, trying offline database...');
 
-              document.getElementById('feedWrap').innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#666"><div style="font-size:60px">📭</div><div style="font-family:Syne,sans-serif;font-size:18px">No videos available on server</div><a href="/scrapp" style="color:#7c3aed;font-size:14px">Go to Scrapp to check →</a></div>';
+              await loadVideosOffline();
+
+              if (!allVideos.length) {
+
+                hideLoading();
+
+                document.getElementById('feedWrap').innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#666"><div style="font-size:60px">📭</div><div style="font-family:Syne,sans-serif;font-size:18px">No videos available on server</div><a href="/scrapp" style="color:#7c3aed;font-size:14px">Go to Scrapp to check →</a></div>';
+
+              }
 
             }
 
@@ -4563,6 +4573,15 @@
       }
 
     });
+
+    // Register Service Worker for offline PWA support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker registered successfully!', reg.scope))
+          .catch(err => console.error('Service Worker registration failed:', err));
+      });
+    }
 
   </script>
 
