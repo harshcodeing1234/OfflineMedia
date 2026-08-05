@@ -1714,8 +1714,10 @@
           const { outcome } = await deferredPrompt.userChoice;
           console.log('PWA installation user choice:', outcome);
           deferredPrompt = null;
+          // Stay on landing page, let the user launch the standalone PWA once installed
+          return;
         }
-        // Redirect to target route /play (login page will automatically intercept if unauthenticated)
+        // Redirect to /play only as a fallback if PWA installation is not supported/prompted
         window.location.href = '/play';
       });
     });
