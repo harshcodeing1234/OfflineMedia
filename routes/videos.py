@@ -8,6 +8,7 @@ from backend.models import User, Scrape, Video, Comment, Like, SavedVideo, Watch
 from config import CACHE_FOLDER
 from backend.utils import safe_file_operation
 from backend.scraper import download_video_task
+from backend.cache_store import cache
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -18,6 +19,12 @@ def get_videos():
     offset = request.args.get('offset', default=0, type=int)
     exclude_ids = request.args.get('exclude', default='', type=str)
     
+    # Try fetching from cache
+    cache_key = f"videos_feed_{current_user.id}_{limit}_{offset}_{exclude_ids}"
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return jsonify(cached_data)
+
     excluded = set()
     if exclude_ids:
         try:
@@ -69,7 +76,11 @@ def get_videos():
     result = unwatched[:limit]
     if len(result) < limit:
         result.extend(watched[:limit - len(result)])
+        
+    # Save to cache
+    cache.set(cache_key, result, timeout=300)
     return jsonify(result)
+
 
 @videos_bp.route('/api/video/<int:video_id>/download_request', methods=['POST'])
 @login_required
@@ -123,6 +134,7 @@ def like_video(filename):
         db.session.add(new_like)
         liked = True
     db.session.commit()
+    cache.clear()  # Clear video cache
     total_likes = Like.query.filter_by(filename=filename).count()
     return jsonify({'likes': total_likes, 'liked': liked})
 
@@ -133,12 +145,18 @@ def add_comment(filename):
     comment = Comment(filename=filename, user_id=current_user.id, text=data['text'])
     db.session.add(comment)
     db.session.commit()
+    cache.clear()  # Clear video and comment cache
     total_comments = Comment.query.filter_by(filename=filename).count()
     return jsonify({'success': True, 'comment_count': total_comments})
 
 @videos_bp.route('/api/video/<path:filename>/comments')
 @login_required
 def get_comments(filename):
+    cache_key = f"comments_{filename}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached)
+
     comments = Comment.query.filter_by(filename=filename).order_by(Comment.created_at.desc()).all()
     user_cache = {}
     result = []
@@ -158,6 +176,7 @@ def get_comments(filename):
             'text': c.text,
             'created_at': c.created_at.isoformat()
         })
+    cache.set(cache_key, result, timeout=300)
     return jsonify(result)
 
 @videos_bp.route('/api/comment/<int:comment_id>', methods=['PUT'])
@@ -169,6 +188,7 @@ def edit_comment(comment_id):
     data = request.get_json()
     comment.text = data['text']
     db.session.commit()
+    cache.clear()  # Clear cache
     return jsonify({'success': True})
 
 @videos_bp.route('/api/comment/<int:comment_id>', methods=['DELETE'])
@@ -179,6 +199,7 @@ def delete_comment(comment_id):
         return jsonify({'error': 'Unauthorized'}), 403
     db.session.delete(comment)
     db.session.commit()
+    cache.clear()  # Clear cache
     return jsonify({'success': True})
 
 @videos_bp.route('/api/video/<path:filename>/save', methods=['POST'])
@@ -188,6 +209,7 @@ def save_video(filename):
     if existing:
         db.session.delete(existing)
         db.session.commit()
+        cache.clear()  # Clear cache
         return jsonify({'saved': False})
     else:
         video = Video.query.filter_by(filename=filename).first()
@@ -201,6 +223,7 @@ def save_video(filename):
             )
             db.session.add(saved_video)
             db.session.commit()
+            cache.clear()  # Clear cache
             return jsonify({'saved': True})
         else:
             return jsonify({'error': 'Video not found'}), 404
@@ -209,6 +232,11 @@ def save_video(filename):
 @login_required
 def get_saved_videos():
     limit = request.args.get('limit', type=int)
+    cache_key = f"saved_videos_{current_user.id}_{limit}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached)
+
     query = SavedVideo.query.filter_by(user_id=current_user.id).order_by(SavedVideo.created_at.desc())
     if limit:
         query = query.limit(limit)
@@ -229,6 +257,7 @@ def get_saved_videos():
                 'comment_count': comments_count.get(s.filename, 0),
                 'created_at': s.created_at.isoformat()
             })
+    cache.set(cache_key, result, timeout=300)
     return jsonify(result)
 
 @videos_bp.route('/api/saved-video/<int:saved_id>', methods=['DELETE'])
@@ -241,6 +270,7 @@ def delete_saved_video(saved_id):
     safe_file_operation(os.remove, filepath)
     db.session.delete(saved)
     db.session.commit()
+    cache.clear()  # Clear cache
     return jsonify({'success': True})
 
 @videos_bp.route('/cache/<path:filename>')
@@ -258,12 +288,18 @@ def mark_watched(filename):
         history = WatchHistory(user_id=current_user.id, filename=filename, platform=platform)
         db.session.add(history)
         db.session.commit()
+        cache.clear()  # Clear cache so watched status updates
     return jsonify({'success': True})
 
 @videos_bp.route('/api/history-videos')
 @login_required
 def get_history_videos():
     limit = request.args.get('limit', type=int)
+    cache_key = f"history_videos_{current_user.id}_{limit}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached)
+
     query = WatchHistory.query.filter_by(user_id=current_user.id).order_by(WatchHistory.watched_at.desc())
     if limit:
         query = query.limit(limit)
@@ -292,6 +328,9 @@ def get_history_videos():
         db.session.delete(h)
     if orphaned:
         db.session.commit()
+        cache.clear()  # Clear cache since we modified data
+
+    cache.set(cache_key, result, timeout=300)
     return jsonify(result)
 
 @videos_bp.route('/api/history/<int:history_id>', methods=['DELETE'])
@@ -302,4 +341,5 @@ def delete_history(history_id):
         return jsonify({'error': 'Unauthorized'}), 403
     db.session.delete(history)
     db.session.commit()
+    cache.clear()  # Clear cache
     return jsonify({'success': True})

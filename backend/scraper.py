@@ -347,6 +347,13 @@ def check_and_complete_scrape(scrape_id, db, Scrape):
         scrape.status = 'completed'
         safe_commit(db)
         
+        # Clear cache so new downloads are visible
+        try:
+            from backend.cache_store import cache
+            cache.clear()
+        except Exception as ce:
+            print(f"Failed to clear cache on scrape completion: {ce}")
+            
         msg = f"All downloads completed! ({completed}/{scrape.total_videos} successful, {failed} failed, {already} already downloaded"
         if skipped > 0:
             msg += f", {skipped} already watched"
@@ -398,6 +405,11 @@ def cleanup_expired_videos(app, db, Video, CACHE_FOLDER):
                 
                 if expired_videos or expired_scrapes:
                     safe_commit(db)
+                    try:
+                        from backend.cache_store import cache
+                        cache.clear()
+                    except Exception as ce:
+                        print(f"Failed to clear cache on cleanup: {ce}")
         except Exception as e:
             print(f"Cleanup error: {e}")
         time.sleep(300)

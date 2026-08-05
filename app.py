@@ -7,6 +7,7 @@ from backend.database import db, init_db
 from backend.models import User, Video
 from config import CACHE_FOLDER, SERVER_URL
 from backend.scraper import cleanup_expired_videos
+from backend.cache_store import cache
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -37,6 +38,17 @@ app.config['SESSION_PERMANENT'] = True
 
 # Initialize database
 init_db(app)
+
+# Initialize Cache (Defaults to SimpleCache for zero-dependency local runs and Termux support)
+# Future switch to Redis:
+# 1. Run: pip install redis
+# 2. Switch configuration to:
+#    app.config['CACHE_TYPE'] = 'RedisCache'
+#    app.config['CACHE_REDIS_URL'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+
+app.config['CACHE_TYPE'] = 'SimpleCache' # comment, if uncomment redits
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+cache.init_app(app)
 
 # Initialize Login Manager
 login_manager = LoginManager()
