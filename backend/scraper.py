@@ -31,8 +31,8 @@ def log_to_scrape(scrape, message, db):
 def run_scraper_session(scrape_id, duration, ttl, platforms, hashtags, quantity, db, Video, Scrape, executor, download_video_func, CACHE_FOLDER):
     """Run scraper in background with proper error handling"""
     try:
-        from agent import scrape_instagram, scrape_youtube, scrape_facebook
-        from models import WatchHistory
+        from backend.agent import scrape_instagram, scrape_youtube, scrape_facebook
+        from backend.models import WatchHistory
         
         scrape = Scrape.query.get(scrape_id)
         if not scrape:
@@ -264,7 +264,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 downloaded_filename = actual_files[0]
                 
                 # Check if this video is already in watch history
-                from models import WatchHistory
+                from backend.models import WatchHistory
                 existing_history = WatchHistory.query.filter_by(
                     user_id=scrape.user_id,
                     filename=downloaded_filename
@@ -328,7 +328,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
 
 def check_and_complete_scrape(scrape_id, db, Scrape):
     """Check if all videos are processed and mark scrape as completed"""
-    from models import Video
+    from backend.models import Video
     scrape = Scrape.query.get(scrape_id)
     if not scrape or scrape.status == 'stopped':
         return
@@ -362,7 +362,7 @@ def cleanup_expired_videos(app, db, Video, CACHE_FOLDER):
     while True:
         try:
             with app.app_context():
-                from models import Scrape, SavedVideo
+                from backend.models import Scrape, SavedVideo
                 now = datetime.utcnow()
                 
                 # Get all saved filenames to protect them

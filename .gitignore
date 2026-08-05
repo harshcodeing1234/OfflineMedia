@@ -32,6 +32,6 @@ selenium-profile-*/
 .DS_Store
 Thumbs.db
 cookies.txt
-img/instagram_img.jpg
+static/img/instagram_img.jpg
 .env
 docs/

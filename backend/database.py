@@ -13,15 +13,6 @@ def init_db(app):
     with app.app_context():
         db.create_all()
         run_migrations()
-        # Only run SQLite-specific PRAGMA commands if we are using SQLite
-        if 'sqlite' in str(db.engine.url):
-            try:
-                with db.engine.connect() as conn:
-                    conn.execute(text("PRAGMA journal_mode=WAL;"))
-                    conn.execute(text("PRAGMA busy_timeout=30000;"))
-                    conn.commit()
-            except Exception as e:
-                print(f"SQLite PRAGMA warning: {e}")
 
 def run_migrations():
     """Run all database migrations"""
