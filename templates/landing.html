@@ -13,13 +13,17 @@
     rel="stylesheet">
   <style>
     :root {
-      --accent: #f43f5e; /* Soft Warm Rose */
-      --accent-hover: #fda4af; /* Soft rose tint */
-      --accent-gradient: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%); /* Warm sunset: Rose to Orange */
+      --accent: #f43f5e;
+      /* Soft Warm Rose */
+      --accent-hover: #fda4af;
+      /* Soft rose tint */
+      --accent-gradient: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
+      /* Warm sunset: Rose to Orange */
       --text: #fafafa;
       --muted: #a1a1aa;
       --border: rgba(255, 255, 255, 0.05);
-      --card-bg: rgba(26, 22, 28, 0.45); /* Cozy warm charcoal */
+      --card-bg: rgba(26, 22, 28, 0.45);
+      /* Cozy warm charcoal */
     }
 
     * {
@@ -33,7 +37,8 @@
     }
 
     body {
-      background: linear-gradient(-45deg, #110e14, #181119, #0f0d11, #161014); /* Deep warm cocoa slate */
+      background: linear-gradient(-45deg, #110e14, #181119, #0f0d11, #161014);
+      /* Deep warm cocoa slate */
       background-size: 400% 400%;
       animation: gradient-move 18s ease infinite;
       color: var(--text);
@@ -48,7 +53,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: 
+      background-image:
         linear-gradient(rgba(255, 255, 255, 0.003) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.003) 1px, transparent 1px);
       background-size: 30px 30px;
@@ -57,9 +62,17 @@
     }
 
     @keyframes gradient-move {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
     }
 
     /* Scroll Trigger CSS Animations */
@@ -90,10 +103,21 @@
     }
 
     /* Delays */
-    .delay-100 { transition-delay: 100ms; }
-    .delay-200 { transition-delay: 200ms; }
-    .delay-300 { transition-delay: 300ms; }
-    .delay-400 { transition-delay: 400ms; }
+    .delay-100 {
+      transition-delay: 100ms;
+    }
+
+    .delay-200 {
+      transition-delay: 200ms;
+    }
+
+    .delay-300 {
+      transition-delay: 300ms;
+    }
+
+    .delay-400 {
+      transition-delay: 400ms;
+    }
 
     /* Navbar */
     header {
@@ -200,8 +224,8 @@
       transform: translateX(-50%);
       width: 140%;
       height: 120%;
-      background: radial-gradient(circle, rgba(26, 22, 28, 0.25) 0%, rgba(17, 14, 20, 0.95) 100%), 
-                  url('/static/hero_bg.jpg') no-repeat center center;
+      background: radial-gradient(circle, rgba(26, 22, 28, 0.25) 0%, rgba(17, 14, 20, 0.95) 100%),
+        url('/static/hero_bg.jpg') no-repeat center center;
       background-size: cover;
       opacity: 0.25;
       z-index: -1;
@@ -452,9 +476,17 @@
       display: inline-block;
     }
 
-    .dot.red { background: #ef4444; }
-    .dot.yellow { background: #f59e0b; }
-    .dot.green { background: #10b981; }
+    .dot.red {
+      background: #ef4444;
+    }
+
+    .dot.yellow {
+      background: #f59e0b;
+    }
+
+    .dot.green {
+      background: #10b981;
+    }
 
     .browser-search {
       flex: 1;
@@ -546,9 +578,17 @@
     }
 
     @keyframes pulse-dot {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
+      0% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.4;
+      }
     }
 
     /* Workspace stage subviews */
@@ -657,9 +697,20 @@
     }
 
     @keyframes pulse-icon {
-      0% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.1); opacity: 1; }
-      100% { transform: scale(1); opacity: 0.8; }
+      0% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
     }
 
     .video-progress-bar {
@@ -680,8 +731,13 @@
     }
 
     @keyframes progress-run {
-      0% { width: 0%; }
-      100% { width: 100%; }
+      0% {
+        width: 0%;
+      }
+
+      100% {
+        width: 100%;
+      }
     }
 
     /* Grid layout for Liked & Saved Mock Stages */
@@ -707,17 +763,18 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.85) 100%), 
-                  radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 80%);
+      background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.85) 100%),
+        radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 80%);
       z-index: 1;
     }
 
     .mock-grid-tag {
       position: absolute;
-      top: 8px; right: 8px;
+      top: 8px;
+      right: 8px;
       padding: 4px 6px;
       border-radius: 6px;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.6);
       font-size: 8px;
       font-weight: 700;
       color: #fff;
@@ -734,7 +791,8 @@
 
     .mock-grid-info {
       position: absolute;
-      bottom: 10px; left: 10px;
+      bottom: 10px;
+      left: 10px;
       font-size: 10px;
       font-weight: 600;
       color: #fff;
@@ -998,9 +1056,17 @@
       font-weight: 600;
     }
 
-    .platform-pill.instagram svg { color: #db2777; }
-    .platform-pill.youtube svg { color: #ef4444; }
-    .platform-pill.facebook svg { color: #3b82f6; }
+    .platform-pill.instagram svg {
+      color: #db2777;
+    }
+
+    .platform-pill.youtube svg {
+      color: #ef4444;
+    }
+
+    .platform-pill.facebook svg {
+      color: #3b82f6;
+    }
 
     .platform-pill svg {
       width: 20px;
@@ -1045,6 +1111,7 @@
         grid-template-columns: 1fr;
         gap: 60px;
       }
+
       .workflow-visual {
         display: flex;
         justify-content: center;
@@ -1056,23 +1123,29 @@
         font-size: 52px;
         letter-spacing: -1.5px;
       }
+
       .hero p {
         font-size: 17px;
         line-height: 1.65;
       }
+
       header {
         padding: 20px;
       }
+
       footer {
         padding: 24px 20px;
       }
+
       .browser-content {
         grid-template-columns: 1fr;
         height: auto;
       }
+
       .mock-sidebar {
         display: none;
       }
+
       .mock-player-stage {
         padding: 40px 20px;
       }
@@ -1084,77 +1157,96 @@
         letter-spacing: -0.8px;
         line-height: 1.2;
       }
+
       .hero p {
         font-size: 17px;
         line-height: 1.7;
       }
+
       .cta-group {
         flex-direction: column;
         width: 100%;
         gap: 14px;
         padding: 0 10px;
       }
+
       .btn-primary {
         width: 100%;
         justify-content: center;
         padding: 18px 32px;
         font-size: 16px;
       }
+
       .platform-pill {
         width: 100%;
         justify-content: center;
         font-size: 16px;
         padding: 14px 24px;
       }
+
       .feature-card {
         padding: 32px 20px;
       }
+
       .feature-card h3 {
         font-size: 20px;
       }
+
       .feature-card p {
         font-size: 15px;
       }
+
       .stat-item h2 {
         font-size: 44px;
       }
+
       .stat-item p {
         font-size: 15px;
       }
+
       .step-text h4 {
         font-size: 18px;
       }
+
       .step-text p {
         font-size: 15px;
       }
+
       .faq-question {
         font-size: 17px;
       }
+
       .faq-answer {
         font-size: 15px;
       }
+
       header {
         flex-direction: column;
         gap: 20px;
         padding: 24px 16px;
       }
+
       .nav-actions {
         width: 100%;
         justify-content: center;
         gap: 16px;
       }
+
       .nav-actions .btn-outline {
         flex: 1;
         text-align: center;
         padding: 12px 20px;
       }
+
       footer {
         flex-direction: column;
         gap: 12px;
       }
+
       .workspace-title h2 {
         font-size: 30px;
       }
+
       .browser-frame {
         border-radius: 16px;
       }
@@ -1176,21 +1268,25 @@
       <a href="/auth" class="btn-text">Sign In</a>
       <a href="/play" class="btn-outline launch-btn">Launch App</a>
     </div>
-  </header>  <main>
+  </header>
+  <main>
     <!-- Hero Area -->
     <section class="hero scroll-reveal">
       <div class="badge">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
         Built for Mindful Watching
       </div>
       <h1>Watch your favorite videos, <span>on your own terms</span>.</h1>
-      <p>Save reels and shorts to watch when you are offline, traveling, or just want to escape the endless feed algorithms. No ads, no noise, just your personal video sanctuary.</p>
+      <p>Save reels and shorts to watch when you are offline, traveling, or just want to escape the endless feed
+        algorithms. No ads, no noise, just your personal video sanctuary.</p>
       <div class="cta-group">
         <a href="/play" class="btn-primary launch-btn">
           Start Your Curated Feed
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
@@ -1219,31 +1315,37 @@
       <div class="feature-card scroll-reveal">
         <div class="icon-wrapper">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
           </svg>
         </div>
         <h3>Curated Video Space</h3>
-        <p>Bring together videos from Instagram, YouTube, and Facebook into one clean feed. You choose what you see—no pushy algorithms telling you what to watch.</p>
+        <p>Bring together videos from Instagram, YouTube, and Facebook into one clean feed. You choose what you see—no
+          pushy algorithms telling you what to watch.</p>
       </div>
 
       <div class="feature-card scroll-reveal delay-100">
         <div class="icon-wrapper">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <h3>Off the Grid? No Problem</h3>
-        <p>Save videos directly to your device storage. Perfect for long flights, subway commutes, or rural getaways where signal is nonexistent.</p>
+        <p>Save videos directly to your device storage. Perfect for long flights, subway commutes, or rural getaways
+          where signal is nonexistent.</p>
       </div>
 
       <div class="feature-card scroll-reveal delay-200">
         <div class="icon-wrapper">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
           </svg>
         </div>
         <h3>No Double Posts, No Clutter</h3>
-        <p>Our smart organizer automatically filters out videos you've already watched or double-saved, keeping your personal library fresh and clean.</p>
+        <p>Our smart organizer automatically filters out videos you've already watched or double-saved, keeping your
+          personal library fresh and clean.</p>
       </div>
 
       <div class="feature-card scroll-reveal delay-300">
@@ -1253,7 +1355,8 @@
           </svg>
         </div>
         <h3>Natural Vertical Swipes</h3>
-        <p>Swipe vertically through your saved collection just like you're used to. It's clean, lightning-fast, and designed to feel native on any touch screen.</p>
+        <p>Swipe vertically through your saved collection just like you're used to. It's clean, lightning-fast, and
+          designed to feel native on any touch screen.</p>
       </div>
     </section>
 
@@ -1263,7 +1366,7 @@
         <h2>Your Personal <span>Video Sanctuary</span></h2>
         <p>Take a look at the distraction-free player interface, streaming directly from your local drive.</p>
       </div>
-      
+
       <div class="workspace-mockup">
         <div class="browser-frame">
           <div class="browser-header">
@@ -1279,37 +1382,40 @@
             <div class="mock-sidebar">
               <div class="mock-nav-item active" onclick="switchMockTab('feed')">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
+                  <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
                 Feed
               </div>
               <div class="mock-nav-item" onclick="switchMockTab('liked')">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
                 Liked
               </div>
               <div class="mock-nav-item" onclick="switchMockTab('saved')">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
                 Saved
               </div>
               <div class="mock-nav-item" onclick="switchMockTab('history')">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 History
               </div>
             </div>
-            
+
             <!-- Mock Player Stage -->
             <div class="mock-player-stage">
               <div class="offline-badge">
                 <span class="badge-dot"></span>
                 Offline: Local Cache
               </div>
-              
+
               <!-- Feed View Stage (Real Video) -->
               <div id="mockStageFeed" class="mock-stage-view">
                 <div class="mock-video-canvas" id="mockVideoCanvas" onclick="toggleMockVideo()">
@@ -1317,35 +1423,37 @@
                   <video autoplay loop muted playsinline class="mock-video-element" id="mockVideoElement">
                     <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
                   </video>
-                  
+
                   <div class="mock-video-overlay">
                     <div class="video-info">
                       <h4>@harshcodeing</h4>
                       <p>Sleek offline caching and distraction-free playback loops! #PWA #offgrid</p>
                     </div>
-                    
+
                     <div class="video-actions">
                       <div class="v-action">
                         <svg fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                          <path
+                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                         </svg>
                         <span>1.2k</span>
                       </div>
                       <div class="v-action">
                         <svg fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+                          <path
+                            d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z" />
                         </svg>
                         <span>42</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div class="play-state-overlay">
                     <svg class="pulse-play" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>
-                  
+
                   <div class="video-progress-bar">
                     <div class="progress-fill"></div>
                   </div>
@@ -1357,14 +1465,20 @@
                 <div class="mock-stage-grid">
                   <div class="mock-grid-item">
                     <div class="mock-grid-tag">
-                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
                       Liked
                     </div>
                     <div class="mock-grid-info">#tech #design</div>
                   </div>
                   <div class="mock-grid-item">
                     <div class="mock-grid-tag">
-                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
                       Liked
                     </div>
                     <div class="mock-grid-info">#coding #setup</div>
@@ -1377,14 +1491,18 @@
                 <div class="mock-stage-grid">
                   <div class="mock-grid-item">
                     <div class="mock-grid-tag">
-                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+                      </svg>
                       Saved
                     </div>
                     <div class="mock-grid-info">Bookmarks</div>
                   </div>
                   <div class="mock-grid-item">
                     <div class="mock-grid-tag">
-                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+                      </svg>
                       Saved
                     </div>
                     <div class="mock-grid-info">Favorites</div>
@@ -1428,8 +1546,9 @@
     <section class="workflow">
       <div class="workflow-content reveal-left">
         <h2>Enjoying your videos is <span>now simple</span>.</h2>
-        <p>OfflineMedia runs quietly in the background, keeping your favorite feeds cached so you can escape the noise whenever you need to.</p>
-        
+        <p>OfflineMedia runs quietly in the background, keeping your favorite feeds cached so you can escape the noise
+          whenever you need to.</p>
+
         <div class="steps-list">
           <div class="step-item">
             <div class="step-num">1</div>
@@ -1442,28 +1561,36 @@
             <div class="step-num">2</div>
             <div class="step-text">
               <h4>We Collect in the Background</h4>
-              <p>The app automatically fetches the latest clips and downloads them directly to your local computer storage.</p>
+              <p>The app automatically fetches the latest clips and downloads them directly to your local computer
+                storage.</p>
             </div>
           </div>
           <div class="step-item">
             <div class="step-num">3</div>
             <div class="step-text">
               <h4>Watch Anytime, Anywhere</h4>
-              <p>Open the app on your phone or laptop. Enjoy 100% offline playback with zero buffering, zero data usage, and absolute peace of mind.</p>
+              <p>Open the app on your phone or laptop. Enjoy 100% offline playback with zero buffering, zero data usage,
+                and absolute peace of mind.</p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="workflow-visual reveal-right" style="text-align: center;">
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 24px; padding: 40px; display: inline-block; width: 100%; max-width: 440px;">
-          <div style="width: 60px; height: 60px; background: rgba(139, 92, 246, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; color: var(--accent);">
+        <div
+          style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 24px; padding: 40px; display: inline-block; width: 100%; max-width: 440px;">
+          <div
+            style="width: 60px; height: 60px; background: rgba(139, 92, 246, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; color: var(--accent);">
             <svg width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Your Data Stays Yours</h3>
-          <p style="color: var(--muted); font-size: 14px; line-height: 1.6;">Everything is stored completely on your local computer. We don't track your views, sell your history, or send your data to corporate servers.</p>
+          <h3
+            style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 12px;">
+            Your Data Stays Yours</h3>
+          <p style="color: var(--muted); font-size: 14px; line-height: 1.6;">Everything is stored completely on your
+            local computer. We don't track your views, sell your history, or send your data to corporate servers.</p>
         </div>
       </div>
     </section>
@@ -1479,36 +1606,44 @@
         <div class="faq-item" onclick="toggleFaq(this)">
           <div class="faq-question">
             <span>How do the videos get saved?</span>
-            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+              viewBox="0 0 24 24">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </div>
           <div class="faq-answer">
-            Our background helper downloads the raw video MP4 files directly to your machine's media storage folder, registering them in your local app database so they can play instantly without an active internet connection.
+            Our background helper downloads the raw video MP4 files directly to your machine's media storage folder,
+            registering them in your local app database so they can play instantly without an active internet
+            connection.
           </div>
         </div>
 
         <div class="faq-item" onclick="toggleFaq(this)">
           <div class="faq-question">
             <span>Is there a subscription fee or limit?</span>
-            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+              viewBox="0 0 24 24">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </div>
           <div class="faq-answer">
-            No subscription fees or usage caps. Because you run and host the app locally on your own computer, you have absolute ownership over your storage capacity and network consumption.
+            No subscription fees or usage caps. Because you run and host the app locally on your own computer, you have
+            absolute ownership over your storage capacity and network consumption.
           </div>
         </div>
 
         <div class="faq-item" onclick="toggleFaq(this)">
           <div class="faq-question">
             <span>How hard is it to set up?</span>
-            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+              viewBox="0 0 24 24">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </div>
           <div class="faq-answer">
-            It takes just a few minutes. We've written one-click automated setup scripts that install the browser handler (Chrome) and start the backend service. Once set up, it runs quietly in the background without needing your attention.
+            It takes just a few minutes. We've written one-click automated setup scripts that install the browser
+            handler (Chrome) and start the backend service. Once set up, it runs quietly in the background without
+            needing your attention.
           </div>
         </div>
       </div>
@@ -1521,19 +1656,22 @@
       <div class="platform-pills">
         <div class="platform-pill instagram">
           <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+            <path
+              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
           </svg>
           Instagram Reels
         </div>
         <div class="platform-pill youtube">
           <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M23.498 6.163a3.003 3.003 0 00-2.11-2.108C19.525 3.5 12 3.5 12 3.5s-7.525 0-9.388.555a3.002 3.002 0 00-2.11 2.108C0 8.025 0 12 0 12s0 3.975.502 5.837a3.003 3.003 0 002.11 2.108C4.475 20.5 12 20.5 12 20.5s7.525 0 9.388-.555a3.003 3.003 0 002.11-2.108C24 15.975 24 12 24 12s0-3.975-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            <path
+              d="M23.498 6.163a3.003 3.003 0 00-2.11-2.108C19.525 3.5 12 3.5 12 3.5s-7.525 0-9.388.555a3.002 3.002 0 00-2.11 2.108C0 8.025 0 12 0 12s0 3.975.502 5.837a3.003 3.003 0 002.11 2.108C4.475 20.5 12 20.5 12 20.5s7.525 0 9.388-.555a3.003 3.003 0 002.11-2.108C24 15.975 24 12 24 12s0-3.975-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
           </svg>
           YouTube Shorts
         </div>
         <div class="platform-pill facebook">
           <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            <path
+              d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
           </svg>
           Facebook Reels
         </div>
@@ -1543,7 +1681,8 @@
 
   <footer>
     <div class="footer-minimal">
-      Design and Developed by <a href="https://harshcodeing.vercel.app/" target="_blank" rel="noopener noreferrer">Harsh Kumar</a>
+      Design and Developed by <a href="https://harshcodeing.vercel.app/" target="_blank" rel="noopener noreferrer">Harsh
+        Kumar</a>
     </div>
   </footer>
 
