@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OfflineMedia – Unified Offline Short-form Video Hub</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f43f5e'/><path d='M38 28 L72 50 L38 72 Z' fill='%23fff'/></svg>">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --accent: #f43f5e; /* Soft Warm Rose */
+      --accent-hover: #fda4af; /* Soft rose tint */
+      --accent-gradient: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%); /* Warm sunset: Rose to Orange */
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --border: rgba(255, 255, 255, 0.05);
+      --card-bg: rgba(26, 22, 28, 0.45); /* Cozy warm charcoal */
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: linear-gradient(-45deg, #110e14, #181119, #0f0d11, #161014); /* Deep warm cocoa slate */
+      background-size: 400% 400%;
+      animation: gradient-move 18s ease infinite;
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient fine grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.003) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.003) 1px, transparent 1px);
+      background-size: 30px 30px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes gradient-move {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Scroll Trigger CSS Animations */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-left {
+      opacity: 0;
+      transform: translateX(-50px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-right {
+      opacity: 0;
+      transform: translateX(50px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Active Animation States */
+    .scroll-reveal.active,
+    .reveal-left.active,
+    .reveal-right.active {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+
+    /* Delays */
+    .delay-100 { transition-delay: 100ms; }
+    .delay-200 { transition-delay: 200ms; }
+    .delay-300 { transition-delay: 300ms; }
+    .delay-400 { transition-delay: 400ms; }
+
+    /* Navbar */
+    header {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+    }
+
+    .logo-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: #fff;
+    }
+
+    .logo-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .btn-text {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .btn-text:hover {
+      color: #fff;
+    }
+
+    .btn-outline {
+      padding: 10px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Hero Section */
+    .hero {
+      max-width: 900px;
+      margin: 100px auto 120px auto;
+      text-align: center;
+      padding: 60px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140%;
+      height: 120%;
+      background: radial-gradient(circle, rgba(26, 22, 28, 0.25) 0%, rgba(17, 14, 20, 0.95) 100%), 
+                  url('/static/hero_bg.jpg') no-repeat center center;
+      background-size: cover;
+      opacity: 0.25;
+      z-index: -1;
+      filter: blur(8px) sepia(0.35) saturate(0.75);
+      border-radius: 40px;
+      mask-image: radial-gradient(ellipse at center, black 25%, transparent 75%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 25%, transparent 75%);
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 20px;
+      color: #a78bfa;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .hero h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 68px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 40px auto;
+    }
+
+    .cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .btn-primary {
+      padding: 16px 32px;
+      background: #fff;
+      color: #09090b;
+      border: none;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: #e4e4e7;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary svg {
+      transition: transform 0.2s;
+    }
+
+    .btn-primary:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* Stats Section */
+    .stats {
+      max-width: 1100px;
+      margin: 0 auto 120px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+      text-align: center;
+    }
+
+    .stat-item h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 8px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-item p {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Grid Features Section - 4 Cards Layout */
+    .features {
+      max-width: 1100px;
+      margin: 0 auto 140px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 24px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(139, 92, 246, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .icon-wrapper {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .icon-wrapper svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .feature-card h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.3px;
+    }
+
+    .feature-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Interactive Play Workspace Section */
+    .workspace {
+      max-width: 1100px;
+      margin: 0 auto 140px auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .workspace-title {
+      text-align: center;
+      margin-bottom: 54px;
+    }
+
+    .workspace-title h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+    }
+
+    .workspace-title h2 span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .workspace-title p {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .workspace-mockup {
+      display: flex;
+      justify-content: center;
+    }
+
+    .browser-frame {
+      width: 100%;
+      max-width: 840px;
+      background: rgba(12, 12, 18, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 35px 70px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    .browser-header {
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .browser-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #f59e0b; }
+    .dot.green { background: #10b981; }
+
+    .browser-search {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: monospace;
+      max-width: 440px;
+      letter-spacing: 0.3px;
+    }
+
+    .browser-content {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      height: 520px;
+    }
+
+    .mock-sidebar {
+      background: rgba(0, 0, 0, 0.2);
+      border-right: 1px solid var(--border);
+      padding: 28px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mock-nav-item {
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .mock-nav-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .mock-nav-item.active {
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+    }
+
+    .mock-player-stage {
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      background: rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+    }
+
+    .offline-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #a7f3d0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      z-index: 5;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    /* Workspace stage subviews */
+    .mock-stage-view {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .mock-video-canvas {
+      width: 260px;
+      height: 420px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    }
+
+    .mock-video-element {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    .mock-video-overlay {
+      position: absolute;
+      inset: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      z-index: 3;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+    }
+
+    .video-info h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .video-info p {
+      font-size: 11px;
+      color: #d1d5db;
+      line-height: 1.4;
+      max-width: 170px;
+    }
+
+    .video-actions {
+      position: absolute;
+      right: 14px;
+      bottom: 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .v-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .v-action svg {
+      width: 22px;
+      height: 22px;
+      color: #f3f4f6;
+    }
+
+    .v-action span {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .play-state-overlay {
+      position: absolute;
+      z-index: 4;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      opacity: 0;
+    }
+
+    .mock-video-canvas.paused .play-state-overlay {
+      opacity: 1;
+    }
+
+    .pulse-play {
+      width: 48px;
+      height: 48px;
+      color: rgba(255, 255, 255, 0.9);
+      animation: pulse-icon 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-icon {
+      0% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.8; }
+    }
+
+    .video-progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 4;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 35%;
+      animation: progress-run 8s infinite linear;
+    }
+
+    @keyframes progress-run {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    /* Grid layout for Liked & Saved Mock Stages */
+    .mock-stage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 340px;
+      padding: 10px;
+    }
+
+    .mock-grid-item {
+      aspect-ratio: 9/16;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mock-grid-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.85) 100%), 
+                  radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 80%);
+      z-index: 1;
+    }
+
+    .mock-grid-tag {
+      position: absolute;
+      top: 8px; right: 8px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.6);
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 2;
+    }
+
+    .mock-grid-tag svg {
+      width: 8px;
+      height: 8px;
+    }
+
+    .mock-grid-info {
+      position: absolute;
+      bottom: 10px; left: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #fff;
+      z-index: 2;
+    }
+
+    /* History List Mock Stage */
+    .mock-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 360px;
+      padding: 10px;
+    }
+
+    .mock-history-item {
+      display: flex;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      align-items: center;
+    }
+
+    .mock-history-thumb {
+      width: 48px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .mock-history-thumb::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+    }
+
+    .mock-history-meta {
+      flex: 1;
+    }
+
+    .mock-history-meta h4 {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .mock-history-meta p {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .mock-history-progress {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .mock-history-bar {
+      height: 100%;
+      background: var(--accent);
+    }
+
+    /* Workflow split section */
+    .workflow {
+      max-width: 1100px;
+      margin: 0 auto 140px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .workflow-content h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+
+    .workflow-content h2 span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .workflow-content p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 16px;
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: #a78bfa;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-text h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .step-text p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* FAQ Section */
+    .faq {
+      max-width: 800px;
+      margin: 0 auto 140px auto;
+      padding: 0 20px;
+    }
+
+    .faq-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .faq-title h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+
+    .faq-title p {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .faq-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .faq-item:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, margin-top 0.3s ease;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 200px;
+      margin-top: 14px;
+    }
+
+    .faq-toggle-icon {
+      transition: transform 0.3s;
+      color: var(--muted);
+    }
+
+    .faq-item.open .faq-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Integration Section */
+    .integration {
+      max-width: 1000px;
+      margin: 0 auto 140px auto;
+      text-align: center;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .integration h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .integration p {
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 500px;
+      margin: 0 auto 48px auto;
+    }
+
+    .platform-pills {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .platform-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .platform-pill.instagram svg { color: #db2777; }
+    .platform-pill.youtube svg { color: #ef4444; }
+    .platform-pill.facebook svg { color: #3b82f6; }
+
+    .platform-pill svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Footer - Minimal Centered Design */
+    footer {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-minimal {
+      text-align: center;
+    }
+
+    .footer-minimal a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .footer-minimal a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    /* Tablet and Mobile Media Queries */
+    @media(max-width: 900px) {
+      .workflow {
+        grid-template-columns: 1fr;
+        gap: 60px;
+      }
+      .workflow-visual {
+        display: flex;
+        justify-content: center;
+      }
+    }
+
+    @media(max-width: 768px) {
+      .hero h1 {
+        font-size: 52px;
+        letter-spacing: -1.5px;
+      }
+      .hero p {
+        font-size: 17px;
+        line-height: 1.65;
+      }
+      header {
+        padding: 20px;
+      }
+      footer {
+        padding: 24px 20px;
+      }
+      .browser-content {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .mock-sidebar {
+        display: none;
+      }
+      .mock-player-stage {
+        padding: 40px 20px;
+      }
+    }
+
+    @media(max-width: 480px) {
+      .hero h1 {
+        font-size: 38px;
+        letter-spacing: -0.8px;
+        line-height: 1.2;
+      }
+      .hero p {
+        font-size: 17px;
+        line-height: 1.7;
+      }
+      .cta-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 14px;
+        padding: 0 10px;
+      }
+      .btn-primary {
+        width: 100%;
+        justify-content: center;
+        padding: 18px 32px;
+        font-size: 16px;
+      }
+      .platform-pill {
+        width: 100%;
+        justify-content: center;
+        font-size: 16px;
+        padding: 14px 24px;
+      }
+      .feature-card {
+        padding: 32px 20px;
+      }
+      .feature-card h3 {
+        font-size: 20px;
+      }
+      .feature-card p {
+        font-size: 15px;
+      }
+      .stat-item h2 {
+        font-size: 44px;
+      }
+      .stat-item p {
+        font-size: 15px;
+      }
+      .step-text h4 {
+        font-size: 18px;
+      }
+      .step-text p {
+        font-size: 15px;
+      }
+      .faq-question {
+        font-size: 17px;
+      }
+      .faq-answer {
+        font-size: 15px;
+      }
+      header {
+        flex-direction: column;
+        gap: 20px;
+        padding: 24px 16px;
+      }
+      .nav-actions {
+        width: 100%;
+        justify-content: center;
+        gap: 16px;
+      }
+      .nav-actions .btn-outline {
+        flex: 1;
+        text-align: center;
+        padding: 12px 20px;
+      }
+      footer {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .workspace-title h2 {
+        font-size: 30px;
+      }
+      .browser-frame {
+        border-radius: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <a href="/" class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </div>
+      <div class="logo-text">Offline<span>Media</span></div>
+    </a>
+    <div class="nav-actions">
+      <a href="/auth" class="btn-text">Sign In</a>
+      <a href="/play" class="btn-outline launch-btn">Launch App</a>
+    </div>
+  </header>  <main>
+    <!-- Hero Area -->
+    <section class="hero scroll-reveal">
+      <div class="badge">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        Built for Mindful Watching
+      </div>
+      <h1>Watch your favorite videos, <span>on your own terms</span>.</h1>
+      <p>Save reels and shorts to watch when you are offline, traveling, or just want to escape the endless feed algorithms. No ads, no noise, just your personal video sanctuary.</p>
+      <div class="cta-group">
+        <a href="/play" class="btn-primary launch-btn">
+          Start Your Curated Feed
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats scroll-reveal">
+      <div class="stat-item">
+        <h2>12K+</h2>
+        <p>Videos Saved</p>
+      </div>
+      <div class="stat-item">
+        <h2>0ms</h2>
+        <p>Offline Buffer</p>
+      </div>
+      <div class="stat-item">
+        <h2>100%</h2>
+        <p>Private & Ad Free</p>
+      </div>
+    </section>
+
+    <!-- Grid Features - 4 Cards -->
+    <section class="features">
+      <div class="feature-card scroll-reveal">
+        <div class="icon-wrapper">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </div>
+        <h3>Curated Video Space</h3>
+        <p>Bring together videos from Instagram, YouTube, and Facebook into one clean feed. You choose what you see—no pushy algorithms telling you what to watch.</p>
+      </div>
+
+      <div class="feature-card scroll-reveal delay-100">
+        <div class="icon-wrapper">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3>Off the Grid? No Problem</h3>
+        <p>Save videos directly to your device storage. Perfect for long flights, subway commutes, or rural getaways where signal is nonexistent.</p>
+      </div>
+
+      <div class="feature-card scroll-reveal delay-200">
+        <div class="icon-wrapper">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+        </div>
+        <h3>No Double Posts, No Clutter</h3>
+        <p>Our smart organizer automatically filters out videos you've already watched or double-saved, keeping your personal library fresh and clean.</p>
+      </div>
+
+      <div class="feature-card scroll-reveal delay-300">
+        <div class="icon-wrapper">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+        </div>
+        <h3>Natural Vertical Swipes</h3>
+        <p>Swipe vertically through your saved collection just like you're used to. It's clean, lightning-fast, and designed to feel native on any touch screen.</p>
+      </div>
+    </section>
+
+    <!-- Workspace Showcase Area (Interactive Player Mock) -->
+    <section class="workspace scroll-reveal">
+      <div class="workspace-title">
+        <h2>Your Personal <span>Video Sanctuary</span></h2>
+        <p>Take a look at the distraction-free player interface, streaming directly from your local drive.</p>
+      </div>
+      
+      <div class="workspace-mockup">
+        <div class="browser-frame">
+          <div class="browser-header">
+            <div class="browser-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="browser-search">http://localhost:5001/play</div>
+          </div>
+          <div class="browser-content">
+            <!-- Mock Sidebar -->
+            <div class="mock-sidebar">
+              <div class="mock-nav-item active" onclick="switchMockTab('feed')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Feed
+              </div>
+              <div class="mock-nav-item" onclick="switchMockTab('liked')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                Liked
+              </div>
+              <div class="mock-nav-item" onclick="switchMockTab('saved')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                Saved
+              </div>
+              <div class="mock-nav-item" onclick="switchMockTab('history')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                History
+              </div>
+            </div>
+            
+            <!-- Mock Player Stage -->
+            <div class="mock-player-stage">
+              <div class="offline-badge">
+                <span class="badge-dot"></span>
+                Offline: Local Cache
+              </div>
+              
+              <!-- Feed View Stage (Real Video) -->
+              <div id="mockStageFeed" class="mock-stage-view">
+                <div class="mock-video-canvas" id="mockVideoCanvas" onclick="toggleMockVideo()">
+                  <!-- HTML5 Loop Video -->
+                  <video autoplay loop muted playsinline class="mock-video-element" id="mockVideoElement">
+                    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                  </video>
+                  
+                  <div class="mock-video-overlay">
+                    <div class="video-info">
+                      <h4>@harshcodeing</h4>
+                      <p>Sleek offline caching and distraction-free playback loops! #PWA #offgrid</p>
+                    </div>
+                    
+                    <div class="video-actions">
+                      <div class="v-action">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        <span>1.2k</span>
+                      </div>
+                      <div class="v-action">
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+                        </svg>
+                        <span>42</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="play-state-overlay">
+                    <svg class="pulse-play" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                  
+                  <div class="video-progress-bar">
+                    <div class="progress-fill"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Liked View Stage -->
+              <div id="mockStageLiked" class="mock-stage-view" style="display:none;">
+                <div class="mock-stage-grid">
+                  <div class="mock-grid-item">
+                    <div class="mock-grid-tag">
+                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                      Liked
+                    </div>
+                    <div class="mock-grid-info">#tech #design</div>
+                  </div>
+                  <div class="mock-grid-item">
+                    <div class="mock-grid-tag">
+                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                      Liked
+                    </div>
+                    <div class="mock-grid-info">#coding #setup</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Saved View Stage -->
+              <div id="mockStageSaved" class="mock-stage-view" style="display:none;">
+                <div class="mock-stage-grid">
+                  <div class="mock-grid-item">
+                    <div class="mock-grid-tag">
+                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                      Saved
+                    </div>
+                    <div class="mock-grid-info">Bookmarks</div>
+                  </div>
+                  <div class="mock-grid-item">
+                    <div class="mock-grid-tag">
+                      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                      Saved
+                    </div>
+                    <div class="mock-grid-info">Favorites</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- History View Stage -->
+              <div id="mockStageHistory" class="mock-stage-view" style="display:none;">
+                <div class="mock-history-list">
+                  <div class="mock-history-item">
+                    <div class="mock-history-thumb"></div>
+                    <div class="mock-history-meta">
+                      <h4>Clean UI Coding loop</h4>
+                      <p>Watched 2 mins ago</p>
+                      <div class="mock-history-progress">
+                        <div class="mock-history-bar" style="width: 85%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mock-history-item">
+                    <div class="mock-history-thumb"></div>
+                    <div class="mock-history-meta">
+                      <h4>Self-hosting workflow 101</h4>
+                      <p>Watched 1 hour ago</p>
+                      <div class="mock-history-progress">
+                        <div class="mock-history-bar" style="width: 40%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detailed Workflow / How it works -->
+    <section class="workflow">
+      <div class="workflow-content reveal-left">
+        <h2>Enjoying your videos is <span>now simple</span>.</h2>
+        <p>OfflineMedia runs quietly in the background, keeping your favorite feeds cached so you can escape the noise whenever you need to.</p>
+        
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <h4>Pick Your Favorites</h4>
+              <p>Add creators, hashtags, or specific links you love from Instagram, YouTube, or Facebook.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <h4>We Collect in the Background</h4>
+              <p>The app automatically fetches the latest clips and downloads them directly to your local computer storage.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <h4>Watch Anytime, Anywhere</h4>
+              <p>Open the app on your phone or laptop. Enjoy 100% offline playback with zero buffering, zero data usage, and absolute peace of mind.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-visual reveal-right" style="text-align: center;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 24px; padding: 40px; display: inline-block; width: 100%; max-width: 440px;">
+          <div style="width: 60px; height: 60px; background: rgba(139, 92, 246, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; color: var(--accent);">
+            <svg width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Your Data Stays Yours</h3>
+          <p style="color: var(--muted); font-size: 14px; line-height: 1.6;">Everything is stored completely on your local computer. We don't track your views, sell your history, or send your data to corporate servers.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq scroll-reveal">
+      <div class="faq-title">
+        <h2>Frequently Asked Questions</h2>
+        <p>Simple answers to common questions about your new video hub.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>How do the videos get saved?</span>
+            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            Our background helper downloads the raw video MP4 files directly to your machine's media storage folder, registering them in your local app database so they can play instantly without an active internet connection.
+          </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>Is there a subscription fee or limit?</span>
+            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            No subscription fees or usage caps. Because you run and host the app locally on your own computer, you have absolute ownership over your storage capacity and network consumption.
+          </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>How hard is it to set up?</span>
+            <svg class="faq-toggle-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            It takes just a few minutes. We've written one-click automated setup scripts that install the browser handler (Chrome) and start the backend service. Once set up, it runs quietly in the background without needing your attention.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Integration pills -->
+    <section class="integration scroll-reveal">
+      <h2>Curate From Your Favorite Apps</h2>
+      <p>Save reels and shorts seamlessly from three major short-video platforms with absolute convenience.</p>
+      <div class="platform-pills">
+        <div class="platform-pill instagram">
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+          </svg>
+          Instagram Reels
+        </div>
+        <div class="platform-pill youtube">
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M23.498 6.163a3.003 3.003 0 00-2.11-2.108C19.525 3.5 12 3.5 12 3.5s-7.525 0-9.388.555a3.002 3.002 0 00-2.11 2.108C0 8.025 0 12 0 12s0 3.975.502 5.837a3.003 3.003 0 002.11 2.108C4.475 20.5 12 20.5 12 20.5s7.525 0 9.388-.555a3.003 3.003 0 002.11-2.108C24 15.975 24 12 24 12s0-3.975-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+          </svg>
+          YouTube Shorts
+        </div>
+        <div class="platform-pill facebook">
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+          </svg>
+          Facebook Reels
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-minimal">
+      Design and Developed by <a href="https://harshcodeing.vercel.app/" target="_blank" rel="noopener noreferrer">Harsh Kumar</a>
+    </div>
+  </footer>
+
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW Registered', reg))
+          .catch(err => console.log('SW Registration Failed', err));
+      });
+    }
+
+    // Capture beforeinstallprompt event
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('Capture PWA install prompt event');
+    });
+
+    // Intercept click on Launch App / Get Started buttons
+    document.querySelectorAll('.launch-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        if (deferredPrompt) {
+          e.preventDefault();
+          // Trigger PWA install dialogue
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log('PWA installation user choice:', outcome);
+          deferredPrompt = null;
+        }
+        // Redirect to target route /play (login page will automatically intercept if unauthenticated)
+        window.location.href = '/play';
+      });
+    });
+
+    // Interactive Workspace Tab Controller
+    function switchMockTab(tabName) {
+      // Update nav active class
+      document.querySelectorAll('.mock-nav-item').forEach(item => {
+        item.classList.remove('active');
+        // Check if text content contains tabName
+        if (item.textContent.toLowerCase().includes(tabName)) {
+          item.classList.add('active');
+        }
+      });
+
+      // Hide all stage views
+      document.querySelectorAll('.mock-stage-view').forEach(view => {
+        view.style.display = 'none';
+      });
+
+      // Show selected stage view
+      const activeView = document.getElementById('mockStage' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+      if (activeView) {
+        activeView.style.display = 'flex';
+      }
+    }
+
+    function toggleMockVideo() {
+      const vid = document.getElementById('mockVideoElement');
+      const canvas = document.getElementById('mockVideoCanvas');
+      if (vid.paused) {
+        vid.play();
+        canvas.classList.remove('paused');
+      } else {
+        vid.pause();
+        canvas.classList.add('paused');
+      }
+    }
+
+    // Scroll Trigger Observer (For scrolling up and down)
+    const observerOptions = {
+      root: null,
+      threshold: 0.15,
+      rootMargin: "0px 0px -50px 0px"
+    };
+
+    const scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+          if (entry.target.classList.contains('workspace')) {
+            const vid = document.getElementById('mockVideoElement');
+            if (vid) {
+              vid.play().catch(e => console.log('Autoplay blocked:', e));
+            }
+          }
+        } else {
+          entry.target.classList.remove('active');
+          if (entry.target.classList.contains('workspace')) {
+            const vid = document.getElementById('mockVideoElement');
+            if (vid) {
+              vid.pause();
+            }
+          }
+        }
+      });
+    }, observerOptions);
+
+    // Watch all elements
+    document.querySelectorAll('.scroll-reveal, .reveal-left, .reveal-right').forEach(el => {
+      scrollObserver.observe(el);
+    });
+
+    // FAQ Toggle functionality
+    function toggleFaq(el) {
+      const isOpen = el.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('open'));
+      if (!isOpen) {
+        el.classList.add('open');
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -4,25 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OfflineMedia – Sign In</title>
+  <title>OfflineMedia – Access Hub</title>
   <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='100%' style='stop-color:%23764ba2'/></linearGradient></defs><rect width='100' height='100' rx='16' fill='url(%23g)'/><path d='M35 25 L75 50 L35 75 Z' fill='%23fff'/></svg>">
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><path d='M38 28 L72 50 L38 72 Z' fill='%23fff'/></svg>">
   <link
-    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --card: #1a1a24;
-      --border: rgba(255, 255, 255, 0.07);
-      --accent: #7c3aed;
-      --accent2: #06b6d4;
-      --text: #f0f0f8;
-      --muted: #6b6b80;
+      --accent: #f43f5e; /* Soft Warm Rose */
+      --accent-hover: #fda4af; /* Soft rose tint */
+      --text: #fafafa;
+      --muted: #8e8a94; /* Soft warm gray */
       --error: #ef4444;
-      --success: #22c55e;
-      --radius: 16px;
+      --success: #10b981;
     }
 
     * {
@@ -32,377 +27,512 @@
     }
 
     body {
-      background: var(--bg);
+      background: linear-gradient(-45deg, #110e14, #181119, #0f0d11, #161014); /* Deep warm cocoa slate */
+      background-size: 400% 400%;
+      animation: gradient-move 18s ease infinite;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      position: relative;
+      overflow-x: hidden;
     }
 
-    .bg-orbs {
+    /* Ambient fine grid overlay */
+    body::before {
+      content: '';
       position: fixed;
       inset: 0;
-      pointer-events: none;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.003) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.003) 1px, transparent 1px);
+      background-size: 30px 30px;
       z-index: 0;
+      pointer-events: none;
     }
 
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.3;
+    @keyframes gradient-move {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
-    .orb1 {
-      width: 500px;
-      height: 500px;
-      background: var(--accent);
-      top: -100px;
-      right: -100px;
-    }
-
-    .orb2 {
-      width: 400px;
-      height: 400px;
-      background: var(--accent2);
-      bottom: -100px;
-      left: -100px;
-    }
-
-    .orb3 {
-      width: 300px;
-      height: 300px;
-      background: #ec4899;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .auth-wrap {
+    /* Main Container (Two-column layout, seamless transparent background) */
+    .container {
       position: relative;
       z-index: 1;
-      width: 100%;
-      max-width: 480px;
-      margin: auto;
-      padding: 24px 16px;
-    }
-
-    .logo-area {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .logo-mark {
-      display: inline-flex;
+      width: calc(100% - 48px);
+      max-width: 1100px;
+      margin: 40px auto;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 80px;
       align-items: center;
-      gap: 10px;
+      animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fade-up {
+      from { transform: translateY(15px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Left Side: Product Showcase */
+    .showcase-panel {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 380px;
+    }
+
+    .showcase-header .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
     }
 
     .logo-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 14px;
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
     }
 
-    .logo-icon::before {
-      content: '';
-      position: absolute;
-      width: 0;
-      height: 0;
-      border-left: 14px solid #fff;
-      border-top: 8px solid transparent;
-      border-bottom: 8px solid transparent;
-      margin-left: 2px;
+    .logo-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: #fff;
     }
 
     .logo-text {
-      font-family: inherit;
-      font-size: 22px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px;
       font-weight: 800;
       letter-spacing: -0.5px;
     }
 
     .logo-text span {
-      color: var(--accent2);
+      background: linear-gradient(135deg, #fda4af 0%, #fb923c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 36px 32px;
-      backdrop-filter: blur(20px);
+    .showcase-content h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 46px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
     }
 
-    .tabs {
+    .showcase-content h1 span {
+      background: linear-gradient(135deg, #a78bfa 0%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .showcase-content p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 480px;
+      margin-bottom: 20px;
+    }
+
+    .showcase-footer {
       display: flex;
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 4px;
+      gap: 28px;
+      margin-top: auto;
+    }
+
+    .feature-tag {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-tag svg {
+      width: 16px;
+      height: 16px;
+      color: #fb923c;
+    }
+
+    /* Right Side: Seamless Form (No card background, no borders) */
+    .form-panel {
+      padding: 20px;
+    }
+
+    .card-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .card-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+
+    /* Minimal Underline Inputs */
+    .input-container {
+      position: relative;
       margin-bottom: 28px;
     }
 
-    .tab {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      background: none;
-      color: var(--muted);
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 600;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all .3s;
-    }
-
-    .tab.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 6px;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
-
-    input {
+    .input-container input {
       width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 13px 16px;
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 0;
+      padding: 14px 0 8px 0;
+      color: #fff;
+      font-family: inherit;
       font-size: 15px;
       outline: none;
-      transition: all .3s;
+      transition: all 0.25s ease;
     }
 
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
-    }
-
-    input::placeholder {
+    .input-container label {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
       color: var(--muted);
+      font-size: 14px;
+      pointer-events: none;
+      transition: all 0.25s ease;
     }
 
-    .input-wrap {
-      position: relative;
+    /* Floating label state */
+    .input-container input:focus ~ label,
+    .input-container input:not(:placeholder-shown) ~ label {
+      top: -8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-hover);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-container input:focus {
+      border-bottom: 1px solid var(--accent);
     }
 
     .input-wrap input {
-      padding-right: 44px;
+      padding-right: 36px;
     }
 
     .eye-btn {
       position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
+      right: 0;
+      bottom: 8px;
       background: none;
       border: none;
       color: var(--muted);
       cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
     }
 
+    .eye-btn:hover {
+      color: #fff;
+    }
+
+    .eye-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Elegant Violet Capsule submit button */
     .btn-primary {
       width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, var(--accent), #9333ea);
-      border: none;
+      padding: 16px;
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
-      color: #fff;
       font-family: inherit;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: all .3s;
-      letter-spacing: .3px;
-      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      margin-top: 32px;
     }
 
     .btn-primary:hover {
+      background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
       transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
     }
 
     .btn-primary:active {
       transform: translateY(0);
     }
 
-    .msg {
-      padding: 12px 16px;
-      border-radius: 10px;
+    .btn-primary svg {
+      transition: transform 0.2s ease;
+    }
+
+    .btn-primary:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* Switch links */
+    .switch-link {
+      text-align: center;
+      margin-top: 24px;
       font-size: 14px;
-      margin-bottom: 16px;
+      color: var(--muted);
+    }
+
+    .switch-link span {
+      color: var(--accent-hover);
+      cursor: pointer;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .switch-link span:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* Messages */
+    .msg {
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-bottom: 24px;
       display: none;
+      font-weight: 500;
+      animation: slide-down 0.2s ease-out;
+    }
+
+    @keyframes slide-down {
+      from { transform: translateY(-8px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .msg.error {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
       color: #fca5a5;
     }
 
     .msg.success {
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #86efac;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #a7f3d0;
     }
 
     .msg.show {
       display: block;
     }
 
-    .divider {
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      margin: 20px 0;
-      position: relative;
+    /* Form rows for registration */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
 
-    .divider::before,
-    .divider::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 42%;
-      height: 1px;
-      background: var(--border);
-    }
-
-    .divider::before {
-      left: 0;
-    }
-
-    .divider::after {
-      right: 0;
-    }
-
-    @media(max-width:480px) {
-      .card {
-        padding: 28px 20px;
+    /* Tablet and Mobile Media Queries */
+    @media(max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        max-width: 480px;
+        margin: 40px auto;
+        width: calc(100% - 32px);
       }
+      .showcase-panel {
+        display: none;
+      }
+    }
 
+    @media(max-width: 480px) {
+      .container {
+        width: calc(100% - 24px);
+        margin: 20px auto;
+      }
+      .form-panel {
+        padding: 10px 0;
+      }
       .form-row {
         grid-template-columns: 1fr;
+        gap: 0;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="bg-orbs">
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-    <div class="orb orb3"></div>
-  </div>
+  <div class="container">
+    <!-- Left Side: Product Showcase -->
+    <div class="showcase-panel">
+      <div class="showcase-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+          <div class="logo-text">Offline<span>Media</span></div>
+        </div>
+      </div>
 
-  <div class="auth-wrap">
-    <div class="logo-area">
-      <div class="logo-mark">
-        <div class="logo-icon"></div>
-        <div class="logo-text">Offline<span>Media</span></div>
+      <div class="showcase-content">
+        <h1>All Short-form Videos in <span>One Place</span>.</h1>
+        <p>Aggregate, cache, and watch reels and shorts from Instagram, YouTube, and Facebook completely offline with a modern TikTok-style swipe interface.</p>
+      </div>
+
+      <div class="showcase-footer">
+        <div class="feature-tag">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Offline Playback
+        </div>
+        <div class="feature-tag">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Unified Feed
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('login')">Sign In</button>
-        <button class="tab" onclick="switchTab('register')">Register</button>
-      </div>
-
+    <!-- Right Side: Forms (Seamlessly Transparent) -->
+    <div class="form-panel">
       <div id="msg" class="msg"></div>
 
       <!-- Login Form -->
       <div id="loginForm">
-        <div class="form-group">
-          <label>Username or Email</label>
-          <input type="text" id="l_user" placeholder="Enter username or email">
+        <div class="card-title">Sign In</div>
+        <div class="card-subtitle">Access your unified video dashboard</div>
+
+        <div class="input-container">
+          <input type="text" id="l_user" required placeholder=" ">
+          <label for="l_user">Username or Email</label>
         </div>
-        <div class="form-group">
-          <label>Password</label>
-          <div class="input-wrap">
-            <input type="password" id="l_pass" placeholder="Enter password">
-            <button class="eye-btn" onclick="togglePwd('l_pass',this)">👁</button>
-          </div>
+
+        <div class="input-container input-wrap">
+          <input type="password" id="l_pass" required placeholder=" ">
+          <label for="l_pass">Password</label>
+          <button class="eye-btn" onclick="togglePwd('l_pass',this)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
         </div>
-        <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+
+        <button class="btn-primary" onclick="doLogin()">
+          Sign In
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+
+        <div class="switch-link">
+          Don't have an account? <span onclick="switchTab('register')">Register</span>
+        </div>
       </div>
 
       <!-- Register Form -->
       <div id="registerForm" style="display:none;">
+        <div class="card-title">Create Account</div>
+        <div class="card-subtitle">Sign up to get started</div>
+
         <div class="form-row">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" id="r_name" placeholder="John Doe">
+          <div class="input-container">
+            <input type="text" id="r_name" required placeholder=" ">
+            <label for="r_name">Full Name</label>
           </div>
-          <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="r_uname" placeholder="johndoe">
+          <div class="input-container">
+            <input type="text" id="r_uname" required placeholder=" ">
+            <label for="r_uname">Username</label>
           </div>
         </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="r_email" placeholder="john@example.com">
+        
+        <div class="input-container">
+          <input type="email" id="r_email" required placeholder=" ">
+          <label for="r_email">Email Address</label>
         </div>
-        <div class="form-group">
-          <label>Phone</label>
-          <input type="tel" id="r_phone" placeholder="+91 9876543210">
+
+        <div class="input-container">
+          <input type="tel" id="r_phone" required placeholder=" ">
+          <label for="r_phone">Phone Number</label>
         </div>
+
         <div class="form-row">
-          <div class="form-group">
-            <label>Password</label>
-            <div class="input-wrap">
-              <input type="password" id="r_pass" placeholder="Min 6 chars">
-              <button class="eye-btn" onclick="togglePwd('r_pass',this)">👁</button>
-            </div>
+          <div class="input-container input-wrap">
+            <input type="password" id="r_pass" required placeholder=" ">
+            <label for="r_pass">Password</label>
+            <button class="eye-btn" onclick="togglePwd('r_pass',this)">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
           </div>
-          <div class="form-group">
-            <label>Confirm Password</label>
-            <div class="input-wrap">
-              <input type="password" id="r_cpass" placeholder="Repeat">
-              <button class="eye-btn" onclick="togglePwd('r_cpass',this)">👁</button>
-            </div>
+          <div class="input-container input-wrap">
+            <input type="password" id="r_cpass" required placeholder=" ">
+            <label for="r_cpass">Confirm</label>
+            <button class="eye-btn" onclick="togglePwd('r_cpass',this)">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
           </div>
         </div>
-        <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+
+        <button class="btn-primary" onclick="doRegister()">
+          Create Account
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+
+        <div class="switch-link">
+          Already have an account? <span onclick="switchTab('login')">Sign In</span>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
     function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === (tab === 'login' ? 0 : 1)));
       document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
       document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
       showMsg('', '');
@@ -414,7 +544,20 @@
     function togglePwd(id, btn) {
       const inp = document.getElementById(id);
       inp.type = inp.type === 'password' ? 'text' : 'password';
-      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+      if (inp.type === 'password') {
+        btn.innerHTML = `
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        `;
+      } else {
+        btn.innerHTML = `
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m18 18l-6.879-6.879" />
+          </svg>
+        `;
+      }
     }
 
     async function doRegister() {

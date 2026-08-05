@@ -9,7 +9,7 @@ views_bp = Blueprint('views', __name__)
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('views.dashboard'))
-    return redirect(url_for('views.auth'))
+    return render_template('landing.html')
 
 @views_bp.route('/auth')
 def auth():
