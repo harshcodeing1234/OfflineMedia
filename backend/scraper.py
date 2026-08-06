@@ -236,6 +236,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 'socket_timeout': 30,
                 'extractor_retries': 3,
                 'file_access_retries': 3,
+                'js_runtimes': ['node', 'deno', 'quickjs'],
             }         
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             cookies_path = os.path.join(project_root, 'cookies.txt')
