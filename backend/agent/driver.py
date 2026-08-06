@@ -28,6 +28,7 @@ def create_driver(profile_name):
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -40,14 +41,19 @@ def create_driver(profile_name):
     })
 
     # Correct: chromedriver path
-    chromedriver_path = "/data/data/com.termux/files/usr/bin/chromedriver"
-
-    if os.path.exists(chromedriver_path):
-        service = Service(chromedriver_path)
+    # Detect environment automatically
+    if os.path.exists("/usr/bin/chromedriver"):
+        # AWS / Ubuntu
+        service = Service("/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=options)
-    else:
-        driver = webdriver.Chrome(options=options)
 
+    elif os.path.exists("/data/data/com.termux/files/usr/bin/chromedriver"):
+        # Termux
+        service = Service("/data/data/com.termux/files/usr/bin/chromedriver")
+        driver = webdriver.Chrome(service=service, options=options)
+
+    else:
+        raise RuntimeError("ChromeDriver not found.")
     driver.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
 
     # Anti-detection (safe)
