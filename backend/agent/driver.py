@@ -53,7 +53,11 @@ def create_driver(profile_name):
         driver = webdriver.Chrome(service=service, options=options)
 
     else:
-        raise RuntimeError("ChromeDriver not found.")
+        # Fallback to system default (useful for Windows/macOS where Selenium Manager downloads/finds chromedriver)
+        try:
+            driver = webdriver.Chrome(options=options)
+        except Exception as e:
+            raise RuntimeError(f"ChromeDriver not found. (System initialization failed: {e})")
     driver.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
 
     # Anti-detection (safe)
@@ -88,8 +92,8 @@ def safe_load_page(driver, url, retries=MAX_RETRIES):
 def load_cookies_from_file(driver, platform):
     """Dynamically read selenium_cookies.txt and inject cookies into Selenium session"""
     cookie_file = "selenium_cookies.txt"
-    if not os.path.exists(cookie_file):
-        print(f"[Cookie Injection] No cookies.txt found in root directory.")
+    if not os.path.exists(cookie_file) or os.path.getsize(cookie_file) == 0:
+        print(f"[Cookie Injection] selenium_cookies.txt not found or empty in root directory.")
         return
 
     if platform == "instagram":

@@ -19,7 +19,7 @@ def run_migrations():
     # Migration: Add is_admin column
     try:
         with db.engine.connect() as conn:
-            conn.execute(text('ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT FALSE'))
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN is_admin BOOLEAN DEFAULT FALSE'))
             conn.commit()
         print("Added is_admin column")
     except Exception as e:

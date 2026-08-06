@@ -28,16 +28,25 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 3,
+    'pool_size': 15,
     'pool_recycle': 1800,
     'pool_pre_ping': True,
-    'max_overflow': 2
+    'max_overflow': 10
 }
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 app.config['SESSION_PERMANENT'] = True
 
 # Initialize database
 init_db(app)
+
+# Ensure cookies.txt and selenium_cookies.txt have full read/write permissions for both Gunicorn and Selenium
+for cookie_file in ['cookies.txt', 'selenium_cookies.txt']:
+    if os.path.exists(cookie_file):
+        try:
+            os.chmod(cookie_file, 0o666)
+            print(f"[Startup] Set read/write permissions (0666) for {cookie_file}")
+        except Exception as pe:
+            print(f"[Startup] Warning: Could not set permissions for {cookie_file}: {pe}")
 
 # Initialize Cache (Defaults to SimpleCache for zero-dependency local runs and Termux support)
 # Future switch to Redis:

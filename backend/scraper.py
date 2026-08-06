@@ -177,44 +177,51 @@ def run_scraper_session(scrape_id, duration, ttl, platforms, hashtags, quantity,
 def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_FOLDER):
     """Download video with TTL enforcement"""
     with app.app_context():
-        video = Video.query.get(video_id)
-        scrape = Scrape.query.get(scrape_id)
-        
-        if not video or not scrape or scrape.status == 'stopped':
-            return
-        
-        # Check TTL before downloading
-        if scrape.started_at:
-            expires_at = scrape.started_at + timedelta(hours=scrape.ttl)
-            if datetime.utcnow() >= expires_at:
-                video.status = 'expired'
-                safe_commit(db)
+        try:
+            video = Video.query.get(video_id)
+            scrape = Scrape.query.get(scrape_id)
+            
+            if not video or not scrape or scrape.status == 'stopped':
                 return
             
-        filename = f"{video.platform}_{video_id}.mp4"
-        path = os.path.join(CACHE_FOLDER, filename)
-        
-        # Check if already exists
-        if os.path.exists(path):
-            video.filename = filename
-            video.status = 'ready'
-            scrape.downloaded_videos += 1
-            if scrape.total_videos > 0:
-                scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
-            safe_commit(db)
-            log_to_scrape(scrape, f"✓ Already exists: {filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
-            check_and_complete_scrape(scrape_id, db, Scrape)
-            return
-        
-        try:
+            # Check TTL before downloading
+            if scrape.started_at:
+                expires_at = scrape.started_at + timedelta(hours=scrape.ttl)
+                if datetime.utcnow() >= expires_at:
+                    video.status = 'expired'
+                    safe_commit(db)
+                    return
+                
+            filename = f"{video.platform}_{video_id}.mp4"
+            path = os.path.join(CACHE_FOLDER, filename)
+            
+            # Check if already exists
+            if os.path.exists(path):
+                video.filename = filename
+                video.status = 'ready'
+                scrape.downloaded_videos += 1
+                if scrape.total_videos > 0:
+                    scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
+                safe_commit(db)
+                log_to_scrape(scrape, f"✓ Already exists: {filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
+                check_and_complete_scrape(scrape_id, db, Scrape)
+                return
+            
             # Check again before starting download
-            scrape = Scrape.query.get(scrape_id)
             if scrape.status == 'stopped':
                 video.status = 'stopped'
                 safe_commit(db)
                 return
             
             log_to_scrape(scrape, f"⬇ Downloading: {video.platform} video {video_id}...", db)
+            
+            # Commit and release the connection before starting the long download
+            db.session.commit()
+            db.session.remove()
+            
+            # Perform the long network download without holding a DB connection
+            download_success = False
+            download_error = None
             
             ydl_opts = {
                 'outtmpl': path,
@@ -230,40 +237,48 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 'extractor_retries': 3,
                 'file_access_retries': 3,
             }         
-            # Add cookies if file exists (for Instagram & YouTube)
             if os.path.exists('cookies.txt'):
                 ydl_opts['cookiefile'] = 'cookies.txt'
-                ydl_opts['no_cookies_update'] = True  # prevent yt-dlp from overwriting cookies.txt
             
-            with YoutubeDL(ydl_opts) as ydl:
-                try:
-                    # Check one more time before actual download
-                    scrape = Scrape.query.get(scrape_id)
-                    if scrape.status == 'stopped':
-                        video.status = 'stopped'
-                        safe_commit(db)
-                        return
-                    
+            try:
+                with YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
-                    if not info:
-                        raise Exception("No video info extracted")
-                except Exception as e:
-                    print(f"Download failed for {url}: {e}")
-                    video.status = 'failed'
-                    scrape.downloaded_videos += 1
-                    if scrape.total_videos > 0:
-                        scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
-                    safe_commit(db)
-                    log_to_scrape(scrape, f"✗ Failed: {filename} - {str(e)[:50]} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
-                    check_and_complete_scrape(scrape_id, db, Scrape)
-                    return
+                    if info:
+                        download_success = True
+                    else:
+                        download_error = "No video info extracted"
+            except Exception as e:
+                download_error = str(e)
             
-            # Check for actual downloaded file (yt-dlp may change extension)
+            # Re-fetch objects and update DB status
+            video = Video.query.get(video_id)
+            scrape = Scrape.query.get(scrape_id)
+            
+            if not video or not scrape:
+                return
+                
+            if scrape.status == 'stopped':
+                video.status = 'stopped'
+                safe_commit(db)
+                return
+                
+            if not download_success:
+                print(f"Download failed for {url}: {download_error}")
+                video.status = 'failed'
+                scrape.downloaded_videos += 1
+                if scrape.total_videos > 0:
+                    scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
+                safe_commit(db)
+                log_to_scrape(scrape, f"✗ Failed: {filename} - {download_error[:50]} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
+                check_and_complete_scrape(scrape_id, db, Scrape)
+                return
+            
+            # Check for actual downloaded file
             actual_files = [f for f in os.listdir(CACHE_FOLDER) if f.startswith(f"{video.platform}_{video_id}")]
             if actual_files:
                 downloaded_filename = actual_files[0]
                 
-                # Check if this video is already in watch history
+                # Check watch history
                 from backend.models import WatchHistory
                 existing_history = WatchHistory.query.filter_by(
                     user_id=scrape.user_id,
@@ -271,7 +286,6 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 ).first()
                 
                 if existing_history:
-                    # Video already watched, delete and skip
                     try:
                         os.remove(os.path.join(CACHE_FOLDER, downloaded_filename))
                         log_to_scrape(scrape, f"⊘ Skipped (already watched): {downloaded_filename}", db)
@@ -283,7 +297,6 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                     if scrape.total_videos > 0:
                         scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
                 else:
-                    # New video, keep it
                     video.filename = downloaded_filename
                     video.status = 'completed'
                     scrape.downloaded_videos += 1
@@ -300,8 +313,6 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 log_to_scrape(scrape, f"✗ Failed: {filename} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
             
             safe_commit(db)
-            
-            # Check if all downloads complete
             check_and_complete_scrape(scrape_id, db, Scrape)
             
             # Add small delay between downloads
@@ -317,13 +328,22 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                         pass
                         
         except Exception as e:
-            video.status = 'failed'
-            scrape.downloaded_videos += 1
-            if scrape.total_videos > 0:
-                scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
-            safe_commit(db)
-            log_to_scrape(scrape, f"✗ Error: {filename} - {str(e)[:50]} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
-            check_and_complete_scrape(scrape_id, db, Scrape)
+            try:
+                # Re-fetch objects if session was removed
+                video = Video.query.get(video_id)
+                scrape = Scrape.query.get(scrape_id)
+                if video and scrape:
+                    video.status = 'failed'
+                    scrape.downloaded_videos += 1
+                    if scrape.total_videos > 0:
+                        scrape.progress = int((scrape.downloaded_videos / scrape.total_videos) * 100)
+                    safe_commit(db)
+                    log_to_scrape(scrape, f"✗ Error: {filename} - {str(e)[:50]} ({scrape.downloaded_videos}/{scrape.total_videos})", db)
+                    check_and_complete_scrape(scrape_id, db, Scrape)
+            except:
+                pass
+        finally:
+            db.session.remove()
 
 
 def check_and_complete_scrape(scrape_id, db, Scrape):
@@ -369,53 +389,56 @@ def cleanup_expired_videos(app, db, Video, CACHE_FOLDER):
     while True:
         try:
             with app.app_context():
-                from backend.models import Scrape, SavedVideo
-                now = datetime.utcnow()
-                
-                # Get all saved filenames to protect them
-                saved_filenames = {s.filename for s in SavedVideo.query.all()}
-                
-                # Delete expired videos (but not saved ones)
-                expired_videos = Video.query.filter(Video.expires_at < now).all()
-                for video in expired_videos:
-                    if video.filename and video.filename not in saved_filenames:
-                        filepath = os.path.join(CACHE_FOLDER, video.filename)
-                        try:
-                            if os.path.exists(filepath):
-                                os.remove(filepath)
-                                print(f"Deleted expired video: {video.filename}")
-                        except Exception as e:
-                            print(f"Failed to delete expired video {filepath}: {e}")
-                    db.session.delete(video)
-                
-                # Delete expired scrapes and their videos
-                expired_scrapes = Scrape.query.filter(Scrape.expires_at < now).all()
-                for scrape in expired_scrapes:
-                    for video in scrape.videos:
+                try:
+                    from backend.models import Scrape, SavedVideo
+                    now = datetime.utcnow()
+                    
+                    # Get all saved filenames to protect them
+                    saved_filenames = {s.filename for s in SavedVideo.query.all()}
+                    
+                    # Delete expired videos (but not saved ones)
+                    expired_videos = Video.query.filter(Video.expires_at < now).all()
+                    for video in expired_videos:
                         if video.filename and video.filename not in saved_filenames:
                             filepath = os.path.join(CACHE_FOLDER, video.filename)
                             try:
                                 if os.path.exists(filepath):
                                     os.remove(filepath)
-                                    print(f"Deleted video from expired scrape: {video.filename}")
+                                    print(f"Deleted expired video: {video.filename}")
                             except Exception as e:
-                                print(f"Failed to delete video {filepath}: {e}")
-                    db.session.delete(scrape)
-                    print(f"Deleted expired scrape: {scrape.id}")
-                
-                if expired_videos or expired_scrapes:
-                    safe_commit(db)
-                    try:
-                        from backend.cache_store import cache
-                        cache.clear()
-                    except Exception as ce:
-                        print(f"Failed to clear cache on cleanup: {ce}")
+                                print(f"Failed to delete expired video {filepath}: {e}")
+                        db.session.delete(video)
+                    
+                    # Delete expired scrapes and their videos
+                    expired_scrapes = Scrape.query.filter(Scrape.expires_at < now).all()
+                    for scrape in expired_scrapes:
+                        for video in scrape.videos:
+                            if video.filename and video.filename not in saved_filenames:
+                                filepath = os.path.join(CACHE_FOLDER, video.filename)
+                                try:
+                                    if os.path.exists(filepath):
+                                        os.remove(filepath)
+                                        print(f"Deleted video from expired scrape: {video.filename}")
+                                except Exception as e:
+                                    print(f"Failed to delete video {filepath}: {e}")
+                        db.session.delete(scrape)
+                        print(f"Deleted expired scrape: {scrape.id}")
+                    
+                    if expired_videos or expired_scrapes:
+                        safe_commit(db)
+                        try:
+                            from backend.cache_store import cache
+                            cache.clear()
+                        except Exception as ce:
+                            print(f"Failed to clear cache on cleanup: {ce}")
+                finally:
+                    db.session.remove()
         except Exception as e:
             print(f"Cleanup error: {e}")
         time.sleep(300)
 
 def save_cookies(driver, path="selenium_cookies.txt"):
-    """Merge new cookies from Selenium with existing cookies in cookies.txt to avoid overwriting other domains"""
+    """Merge new cookies from Selenium with existing cookies in selenium_cookies.txt to avoid overwriting other domains"""
     try:
         new_cookies = driver.get_cookies()
         if not new_cookies:
@@ -431,7 +454,7 @@ def save_cookies(driver, path="selenium_cookies.txt"):
             current_platform = "facebook"
 
         existing_lines = []
-        if os.path.exists(path):
+        if os.path.exists(path) and os.path.getsize(path) > 0:
             with open(path, "r", encoding="utf-8") as f:
                 for line in f:
                     stripped = line.strip()
@@ -474,6 +497,12 @@ def save_cookies(driver, path="selenium_cookies.txt"):
                 prefix = "#HttpOnly_" if c.get("httpOnly") else ""
 
                 f.write(f"{prefix}{domain}\t{flag}\t{path_c}\t{secure}\t{expiry}\t{name}\t{value}\n")
+
+        # Ensure correct permissions
+        try:
+            os.chmod(path, 0o666)
+        except:
+            pass
 
         print(f"[Cookie Sync] Successfully merged and saved fresh {current_platform} cookies to {path}.")
     except Exception as e:

@@ -18,14 +18,17 @@ executor = ThreadPoolExecutor(max_workers=THREAD_POOL_WORKERS)
 def run_scraper(app_instance, scrape_id, duration, ttl, platforms, hashtags=None, quantity=100):
     """Wrapper for running scraper session in a background thread"""
     with app_instance.app_context():
-        def download_video(video_id, url, scrape_id):
-            """Wrapper for download task inside the scraping thread"""
-            download_video_task(video_id, url, scrape_id, app_instance, db, Video, Scrape, CACHE_FOLDER)
+        try:
+            def download_video(video_id, url, scrape_id):
+                """Wrapper for download task inside the scraping thread"""
+                download_video_task(video_id, url, scrape_id, app_instance, db, Video, Scrape, CACHE_FOLDER)
 
-        run_scraper_session(
-            scrape_id, duration, ttl, platforms, hashtags or {}, quantity, 
-            db, Video, Scrape, executor, download_video, CACHE_FOLDER
-        )
+            run_scraper_session(
+                scrape_id, duration, ttl, platforms, hashtags or {}, quantity, 
+                db, Video, Scrape, executor, download_video, CACHE_FOLDER
+            )
+        finally:
+            db.session.remove()
 
 @admin_bp.route('/api/stats')
 @login_required

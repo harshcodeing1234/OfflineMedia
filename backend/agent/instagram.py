@@ -3,7 +3,6 @@ import time
 import random
 from selenium.webdriver.common.by import By #type:ignore
 from backend.agent.driver import create_driver, load_cookies_from_file, safe_load_page
-from backend.scraper import save_cookies
 
 def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
     """Scrape Instagram from explore page or hashtags with rate limiting"""    
@@ -39,9 +38,7 @@ def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
                     continue
                 
                 time.sleep(5)
-                cookies = driver.get_cookies()
-                if any(c['name'] == 'sessionid' for c in cookies):
-                    save_cookies(driver, path="selenium_cookies.txt")
+                # Cookies are read-only and managed by the user manually
                 
                 start_time = time.time()
                 hashtag_links = set()
@@ -85,9 +82,7 @@ def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
                 return []
             
             time.sleep(5)
-            cookies = driver.get_cookies()
-            if any(c['name'] == 'sessionid' for c in cookies):
-                save_cookies(driver, path="selenium_cookies.txt")
+            # Cookies are read-only and managed by the user manually
             
             start_time = time.time()
             
