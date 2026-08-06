@@ -28,10 +28,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 15,
+    'pool_size': 5,
     'pool_recycle': 1800,
     'pool_pre_ping': True,
-    'max_overflow': 10
+    'max_overflow': 2
 }
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 app.config['SESSION_PERMANENT'] = True
