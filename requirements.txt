@@ -1,0 +1,10 @@
+flask
+flask-login
+flask-sqlalchemy
+flask-caching
+requests
+selenium
+yt-dlp
+werkzeug
+psycopg2-binary
+python-dotenv

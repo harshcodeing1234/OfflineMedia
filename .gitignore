@@ -3,7 +3,7 @@ cache/
 *.mp4
 *.webm
 *.mkv
-*.txt
+
 
 # Database
 *.db
@@ -31,7 +31,6 @@ selenium-profile-*/
 # OS
 .DS_Store
 Thumbs.db
-cookies.txt
 static/img/instagram_img.jpg
 .env
 docs/
