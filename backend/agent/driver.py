@@ -44,8 +44,15 @@ def create_driver(profile_name):
     # Detect environment automatically
     if os.path.exists("/usr/bin/chromedriver"):
         # AWS / Ubuntu
-        service = Service("/usr/bin/chromedriver")
-        driver = webdriver.Chrome(service=service, options=options)
+        try:
+            service = Service("/usr/bin/chromedriver")
+            driver = webdriver.Chrome(service=service, options=options)
+        except Exception as e:
+            print(f"[Driver] Manual /usr/bin/chromedriver failed: {e}. Falling back to Selenium Manager...")
+            try:
+                driver = webdriver.Chrome(options=options)
+            except Exception as se:
+                raise RuntimeError(f"ChromeDriver not found. (System default initialization failed: {se})")
 
     elif os.path.exists("/data/data/com.termux/files/usr/bin/chromedriver"):
         # Termux
@@ -91,9 +98,10 @@ def safe_load_page(driver, url, retries=MAX_RETRIES):
 
 def load_cookies_from_file(driver, platform):
     """Dynamically read selenium_cookies.txt and inject cookies into Selenium session"""
-    cookie_file = "selenium_cookies.txt"
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    cookie_file = os.path.join(project_root, "selenium_cookies.txt")
     if not os.path.exists(cookie_file) or os.path.getsize(cookie_file) == 0:
-        print(f"[Cookie Injection] selenium_cookies.txt not found or empty in root directory.")
+        print(f"[Cookie Injection] selenium_cookies.txt not found or empty at {cookie_file}.")
         return
 
     if platform == "instagram":

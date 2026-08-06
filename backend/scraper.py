@@ -237,8 +237,10 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 'extractor_retries': 3,
                 'file_access_retries': 3,
             }         
-            if os.path.exists('cookies.txt'):
-                ydl_opts['cookiefile'] = 'cookies.txt'
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cookies_path = os.path.join(project_root, 'cookies.txt')
+            if os.path.exists(cookies_path):
+                ydl_opts['cookiefile'] = cookies_path
             
             try:
                 with YoutubeDL(ydl_opts) as ydl:
