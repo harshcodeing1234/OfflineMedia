@@ -87,9 +87,9 @@ if __name__ == '__main__':
     # Ensure cache folder exists
     os.makedirs(CACHE_FOLDER, exist_ok=True)
     
-    # Set restrictive permissions (owner only)
+    # Set permissions so Nginx/Gunicorn can both read/serve files
     try:
-        os.chmod(CACHE_FOLDER, 0o700)
+        os.chmod(CACHE_FOLDER, 0o755)
     except:
         pass
         
