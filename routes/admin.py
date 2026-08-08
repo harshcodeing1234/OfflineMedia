@@ -12,8 +12,15 @@ from backend.scraper import run_scraper_session, download_video_task
 
 admin_bp = Blueprint('admin', __name__)
 
-# Initialize the background scraping task executor
-executor = ThreadPoolExecutor(max_workers=THREAD_POOL_WORKERS)
+# Initialize the background scraping task executor.
+# On Linux servers (AWS), YouTube downloads spawn a deno process per video for JS challenge solving.
+# Running too many concurrently causes load spikes and hung downloads on t3.micro/small.
+# Default: 3 on Linux, 10 on Windows/macOS. Override via THREAD_POOL_WORKERS env variable.
+import platform as _platform
+_default_workers = 8 if _platform.system() == "Linux" else THREAD_POOL_WORKERS
+_workers = int(os.environ.get("THREAD_POOL_WORKERS", _default_workers))
+executor = ThreadPoolExecutor(max_workers=_workers)
+print(f"[Executor] ThreadPoolExecutor initialized with {_workers} workers")
 
 def run_scraper(app_instance, scrape_id, duration, ttl, platforms, hashtags=None, quantity=100):
     """Wrapper for running scraper session in a background thread"""
