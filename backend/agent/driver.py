@@ -17,19 +17,23 @@ def create_driver(profile_name):
     if os.path.exists(chrome_path):
         options.binary_location = chrome_path
 
-    # Profile
-    profile_dir = Path.home() / "selenium-profiles" / profile_name
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    options.add_argument(f"--user-data-dir={profile_dir}") 
-
-    # Stability options
+    # Stability options & User Agent to avoid bot detection
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--headless=new")
+    
+    # Headless mode: default to False on Windows/macOS (to bypass bot detection), and True on Linux/Termux
+    import platform as sys_platform
+    is_desktop = sys_platform.system() in ["Windows", "Darwin"]
+    default_headless = "false" if is_desktop else "true"
+    headless = os.environ.get("HEADLESS", default_headless).lower() == "true"
+    if headless:
+        options.add_argument("--headless=new")
+        
     options.add_argument("--window-size=1920,1080")
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)

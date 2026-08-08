@@ -19,11 +19,7 @@ def scrape_youtube(duration_min, hashtags=None, quantity=100, stop_flag=None):
     hashtags = [h for h in hashtags if h]
 
     try:
-        # Clear cached YouTube profile so cookies.txt account is used
-        yt_profile = Path.home() / "selenium-profiles" / "youtube"
-        if yt_profile.exists():
-            shutil.rmtree(yt_profile)
-        yt_profile.mkdir(parents=True, exist_ok=True)
+
 
         driver = create_driver("youtube")
         load_cookies_from_file(driver, "youtube")

@@ -37,8 +37,10 @@ def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
                 if not safe_load_page(driver, url):
                     continue
                 
+                if "login" in driver.current_url.lower() or "accounts/login" in driver.current_url.lower():
+                    raise ValueError("Instagram redirected to login page. Please check/update your instagram cookies in selenium_cookies.txt")
+                
                 time.sleep(5)
-                # Cookies are read-only and managed by the user manually
                 
                 start_time = time.time()
                 hashtag_links = set()
@@ -81,8 +83,10 @@ def scrape_instagram(duration_min, hashtags=None, quantity=100, stop_flag=None):
             if not safe_load_page(driver, url):
                 return []
             
+            if "login" in driver.current_url.lower() or "accounts/login" in driver.current_url.lower():
+                raise ValueError("Instagram redirected to login page. Please check/update your instagram cookies in selenium_cookies.txt")
+            
             time.sleep(5)
-            # Cookies are read-only and managed by the user manually
             
             start_time = time.time()
             
