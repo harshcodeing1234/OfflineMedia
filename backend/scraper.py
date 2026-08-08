@@ -187,6 +187,8 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             if not video or not scrape or scrape.status == 'stopped':
                 return
             
+            platform = video.platform
+            
             # Check TTL before downloading
             if scrape.started_at:
                 expires_at = scrape.started_at + timedelta(hours=scrape.ttl)
@@ -195,7 +197,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                     safe_commit(db)
                     return
                 
-            filename = f"{video.platform}_{video_id}.mp4"
+            filename = f"{platform}_{video_id}.mp4"
             path = os.path.join(CACHE_FOLDER, filename)
             
             # Check if already exists
@@ -216,7 +218,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 safe_commit(db)
                 return
             
-            log_to_scrape(scrape, f"⬇ Downloading: {video.platform} video {video_id}...", db)
+            log_to_scrape(scrape, f"⬇ Downloading: {platform} video {video_id}...", db)
             
             # Commit and release the connection before starting the long download
             db.session.commit()
@@ -247,7 +249,10 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             
             temp_cookies_path = None
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cookies_path = os.path.join(project_root, 'cookies.txt')
+            # YouTube downloads on EC2 require active logged-in session cookies (selenium_cookies.txt)
+            # to bypass anti-bot blocks. Other platforms remain on cookies.txt.
+            cookies_file = 'selenium_cookies.txt' if platform == 'youtube' else 'cookies.txt'
+            cookies_path = os.path.join(project_root, cookies_file)
             
             # Use cookie_lock to safely copy or initialize the cookies file
             with cookie_lock:
@@ -278,8 +283,9 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 download_error = str(e)
             finally:
                 if temp_cookies_path and os.path.exists(temp_cookies_path):
-                    # If download succeeded, write the updated cookies back to main file under lock
-                    if download_success:
+                    # If download succeeded, write the updated cookies back to main file under lock.
+                    # Never write back or modify selenium_cookies.txt via yt-dlp.
+                    if download_success and cookies_file != 'selenium_cookies.txt':
                         with cookie_lock:
                             try:
                                 if os.path.getsize(temp_cookies_path) > 0:
