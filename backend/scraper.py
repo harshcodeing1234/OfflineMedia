@@ -249,21 +249,34 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
 
             # YouTube-specific options to bypass AWS/server bot detection
             if platform == 'youtube':
+                import shutil as _shutil
+                # Find deno/node runtime for JS challenge solving (required on Linux servers)
+                deno_path = (
+                    _shutil.which('deno') or
+                    os.path.expanduser('~/.deno/bin/deno') if os.path.exists(os.path.expanduser('~/.deno/bin/deno')) else None
+                )
+                node_path = _shutil.which('node') or _shutil.which('nodejs')
+
+                js_runtimes = {}
+                if deno_path and os.path.exists(deno_path):
+                    js_runtimes['deno'] = {'path': deno_path}
+                if node_path:
+                    js_runtimes['node'] = {'path': node_path}
+                # If no runtime found, fall back to empty (yt-dlp will warn but still try)
+                if not js_runtimes:
+                    js_runtimes = {'deno': {}, 'node': {}}
+
                 ydl_opts.update({
-                    # tv_embedded client is not region/IP blocked and doesn't need login cookies.
-                    # It's the most reliable client for server environments (AWS, EC2, VPS).
-                    # Order: tv_embedded first (no auth needed), then android as fallback.
                     'extractor_args': {
                         'youtube': {
                             'player_client': ['tv_embedded', 'android'],
                         }
                     },
-                    # Use a single pre-merged format - avoids ffmpeg dependency entirely.
-                    # '18' = 360p mp4 (always available on tv_embedded), fallback to any mp4 or best.
                     'format': '18/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=720]/best',
                     'merge_output_format': 'mp4',
                     'sleep_interval': 1,
                     'max_sleep_interval': 3,
+                    'js_runtimes': js_runtimes,
                 })
             import shutil
             import tempfile

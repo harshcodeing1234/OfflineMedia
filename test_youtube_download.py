@@ -20,7 +20,15 @@ def check_yt_dlp_version():
     print(f"yt-dlp version: {yt_dlp.version.__version__}")
     import shutil
     ffmpeg = shutil.which("ffmpeg")
-    print(f"ffmpeg: {'found at ' + ffmpeg if ffmpeg else 'NOT FOUND (format merging disabled)'}")
+    print(f"ffmpeg:  {'found at ' + ffmpeg if ffmpeg else 'NOT FOUND (format merging disabled)'}")
+    deno = shutil.which("deno") or (os.path.expanduser("~/.deno/bin/deno") if os.path.exists(os.path.expanduser("~/.deno/bin/deno")) else None)
+    node = shutil.which("node") or shutil.which("nodejs")
+    print(f"deno:    {'found at ' + deno if deno else 'NOT FOUND ← THIS IS THE PROBLEM'}")
+    print(f"node:    {'found at ' + node if node else 'NOT FOUND'}")
+    if not deno and not node:
+        print()
+        print("  !! NO JS RUNTIME: YouTube signature solving will fail.")
+        print("  !! Fix: curl -fsSL https://deno.land/install.sh | sh && source ~/.bashrc")
     print()
 
 def test_client(client_list, fmt, use_cookies=True):
