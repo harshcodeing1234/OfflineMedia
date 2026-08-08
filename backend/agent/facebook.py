@@ -6,6 +6,77 @@ from selenium.webdriver.support.ui import WebDriverWait #type:ignore
 from selenium.webdriver.support import expected_conditions as EC #type:ignore
 from backend.agent.driver import create_driver, load_cookies_from_file
 
+def dismiss_facebook_popup(driver):
+    """Attempt to close/hide Facebook login popups and restore scrolling"""
+    try:
+        # First try to click common close buttons using selenium
+        selectors = [
+            "//div[@role='dialog']//div[@role='button'][@aria-label='Close']",
+            "//div[@role='dialog']//div[@role='button'][@aria-label='close']",
+            "//div[@role='dialog']//div[@role='button'][@aria-label='Not Now']",
+            "//div[@role='dialog']//div[@role='button'][@aria-label='not now']",
+            "//div[@role='dialog']//div[@role='button'][@aria-label='बंद करें']",
+            "//div[@role='dialog']//div[@role='button'][contains(@aria-label, 'Close')]",
+            "//div[@role='dialog']//div[@role='button'][contains(@aria-label, 'close')]",
+            "//div[@role='dialog']//div[@role='button']//i", 
+            "//div[@role='dialog']//div[contains(@class, 'x1n2onr6')]",
+        ]
+        for xpath in selectors:
+            try:
+                elements = driver.find_elements(By.XPATH, xpath)
+                for element in elements:
+                    if element.is_displayed():
+                        element.click()
+                        time.sleep(1)
+                        print(f"Clicked FB popup close button using XPath: {xpath}")
+            except:
+                pass
+
+        # Execute JS code to hide/delete any lingering login overlays and restore scrolling
+        js_code = """
+        (function() {
+            let removed = false;
+            // Find all dialogs
+            const dialogs = document.querySelectorAll('div[role="dialog"]');
+            for (let dialog of dialogs) {
+                const text = dialog.innerText || "";
+                // If it looks like a login modal, remove it
+                if (text.includes("Log In") || text.includes("Log in") || text.includes("Sign Up") || text.includes("password") || text.includes("email") || text.includes("Facebook") || text.includes("खाता") || text.includes("लॉग इन")) {
+                    dialog.remove();
+                    removed = true;
+                }
+            }
+            
+            // Look for generic login overlay structures
+            const overlays = document.querySelectorAll('div[class*="login"], div[id*="login"]');
+            for (let overlay of overlays) {
+                // If it is large/covering the screen, remove it
+                if (overlay.offsetWidth > 300 && overlay.offsetHeight > 300) {
+                    overlay.remove();
+                    removed = true;
+                }
+            }
+
+            // Restore scrolling
+            document.body.style.setProperty('overflow', 'auto', 'important');
+            document.documentElement.style.setProperty('overflow', 'auto', 'important');
+            document.body.style.setProperty('position', 'relative', 'important');
+            
+            // Remove overflow blocking classes from body
+            document.body.classList.forEach(cls => {
+                if (cls.includes('scroll') || cls.includes('overflow') || cls.includes('modal') || cls.includes('hidden')) {
+                    document.body.classList.remove(cls);
+                }
+            });
+            return removed;
+        })();
+        """
+        js_removed = driver.execute_script(js_code)
+        if js_removed:
+            print("Successfully removed FB login popup overlay via JS execution.")
+    except Exception as e:
+        print(f"Error while dismissing Facebook login popup: {e}")
+
 def scrape_facebook(duration_min, hashtags=None, quantity=100, stop_flag=None):
     """Scrape Facebook reels from watch page"""
     driver = None
@@ -22,6 +93,7 @@ def scrape_facebook(duration_min, hashtags=None, quantity=100, stop_flag=None):
             except:
                 pass
             time.sleep(2)
+            dismiss_facebook_popup(driver)
             for _ in range(3):
                 driver.execute_script("window.scrollBy(0, 1500);")
                 time.sleep(0.2)
@@ -34,6 +106,8 @@ def scrape_facebook(duration_min, hashtags=None, quantity=100, stop_flag=None):
             if stop_flag and os.path.exists(stop_flag):
                 print("Facebook scraping stopped by user")
                 break
+                
+            dismiss_facebook_popup(driver)
                 
             try:
                 elements = [e for e in driver.find_elements(By.TAG_NAME, "a") if e.get_attribute("href")]
