@@ -17,7 +17,7 @@ admin_bp = Blueprint('admin', __name__)
 # Running too many concurrently causes load spikes and hung downloads on t3.micro/small.
 # Default: 3 on Linux, 10 on Windows/macOS. Override via THREAD_POOL_WORKERS env variable.
 import platform as _platform
-_default_workers = 8 if _platform.system() == "Linux" else THREAD_POOL_WORKERS
+_default_workers = 6 if _platform.system() == "Linux" else THREAD_POOL_WORKERS
 _workers = int(os.environ.get("THREAD_POOL_WORKERS", _default_workers))
 executor = ThreadPoolExecutor(max_workers=_workers)
 print(f"[Executor] ThreadPoolExecutor initialized with {_workers} workers")
