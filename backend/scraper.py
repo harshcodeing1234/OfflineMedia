@@ -228,6 +228,7 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             download_success = False
             download_error = None
 
+            # Base yt-dlp options
             ydl_opts = {
                 'outtmpl': path,
                 'quiet': True,
@@ -245,6 +246,27 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                 'js_runtimes': {'node': {}, 'deno': {}, 'quickjs': {}},
                 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             }
+
+            # YouTube-specific options to bypass AWS/server bot detection
+            if platform == 'youtube':
+                ydl_opts.update({
+                    # Prefer mp4 formats that don't require merging; fallback to any available
+                    'format': 'bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best',
+                    # Use Android client - bypasses sign-in bot checks on server IPs
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'skip': ['webpage'],
+                        }
+                    },
+                    # Merge output to mp4
+                    'merge_output_format': 'mp4',
+                    # Sleep between requests to avoid rate limiting
+                    'sleep_interval': 1,
+                    'max_sleep_interval': 3,
+                    # Allow age-gated content
+                    'age_limit': None,
+                })
             import shutil
             import tempfile
             
@@ -301,6 +323,35 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                         download_error = "No video info extracted"
             except Exception as e:
                 download_error = str(e)
+                # YouTube fallback: if merging failed (no ffmpeg) or format not found,
+                # retry with a single-file format that doesn't require merging
+                if platform == 'youtube' and (
+                    'ffmpeg' in download_error.lower() or
+                    'no video formats' in download_error.lower() or
+                    'requested format' in download_error.lower() or
+                    'sign in' in download_error.lower() or
+                    'confirm your age' in download_error.lower()
+                ):
+                    print(f"[YouTube] Primary format failed: {download_error[:80]}. Trying fallback format...")
+                    try:
+                        fallback_opts = dict(ydl_opts)
+                        fallback_opts['format'] = 'best[ext=mp4]/bestvideo[ext=mp4]/best'
+                        fallback_opts.pop('merge_output_format', None)
+                        # Try mweb client as additional fallback (lighter, less bot-detected)
+                        fallback_opts['extractor_args'] = {
+                            'youtube': {
+                                'player_client': ['android'],
+                            }
+                        }
+                        with YoutubeDL(fallback_opts) as ydl2:
+                            info2 = ydl2.extract_info(url, download=True)
+                            if info2:
+                                download_success = True
+                                download_error = None
+                            else:
+                                download_error = "Fallback: No video info extracted"
+                    except Exception as e2:
+                        download_error = f"Primary: {download_error[:60]} | Fallback: {str(e2)[:60]}"
             finally:
                 if temp_cookies_path and os.path.exists(temp_cookies_path):
                     # If download succeeded, write the updated cookies back to main file under lock.
