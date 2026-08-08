@@ -251,10 +251,8 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             if platform == 'youtube':
                 import shutil as _shutil
                 # Find deno/node runtime for JS challenge solving (required on Linux servers)
-                deno_path = (
-                    _shutil.which('deno') or
-                    os.path.expanduser('~/.deno/bin/deno') if os.path.exists(os.path.expanduser('~/.deno/bin/deno')) else None
-                )
+                deno_bin = os.path.expanduser('~/.deno/bin/deno')
+                deno_path = _shutil.which('deno') or (deno_bin if os.path.exists(deno_bin) else None)
                 node_path = _shutil.which('node') or _shutil.which('nodejs')
 
                 js_runtimes = {}
@@ -262,17 +260,18 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                     js_runtimes['deno'] = {'path': deno_path}
                 if node_path:
                     js_runtimes['node'] = {'path': node_path}
-                # If no runtime found, fall back to empty (yt-dlp will warn but still try)
                 if not js_runtimes:
                     js_runtimes = {'deno': {}, 'node': {}}
 
                 ydl_opts.update({
+                    # tv_embedded + web_embedded work with cookies on AWS (confirmed via test).
+                    # android is excluded - it skips cookies and returns no formats.
                     'extractor_args': {
                         'youtube': {
-                            'player_client': ['tv_embedded', 'android'],
+                            'player_client': ['tv_embedded', 'web_embedded', 'web'],
                         }
                     },
-                    'format': '18/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=720]/best',
+                    'format': '18/best[height<=720]/best',
                     'merge_output_format': 'mp4',
                     'sleep_interval': 1,
                     'max_sleep_interval': 3,
@@ -344,11 +343,10 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                     'confirm your age' in download_error.lower() or
                     'http error' in download_error.lower()
                 ):
-                    # Fallback clients to try in order
+                    # Fallback clients to try in order (all confirmed to work with cookies on AWS)
                     fallback_clients = [
-                        ['web_embedded', 'android'],
-                        ['android_vr'],
-                        ['mweb'],
+                        ['web_embedded'],
+                        ['web'],
                     ]
                     for client_list in fallback_clients:
                         print(f"[YouTube] Trying fallback client {client_list}...")
