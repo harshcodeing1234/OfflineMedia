@@ -250,22 +250,20 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
             # YouTube-specific options to bypass AWS/server bot detection
             if platform == 'youtube':
                 ydl_opts.update({
-                    # Prefer mp4 formats that don't require merging; fallback to any available
-                    'format': 'bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best',
-                    # Use Android client - bypasses sign-in bot checks on server IPs
+                    # tv_embedded client is not region/IP blocked and doesn't need login cookies.
+                    # It's the most reliable client for server environments (AWS, EC2, VPS).
+                    # Order: tv_embedded first (no auth needed), then android as fallback.
                     'extractor_args': {
                         'youtube': {
-                            'player_client': ['android', 'web'],
-                            'skip': ['webpage'],
+                            'player_client': ['tv_embedded', 'android'],
                         }
                     },
-                    # Merge output to mp4
+                    # Use a single pre-merged format - avoids ffmpeg dependency entirely.
+                    # '18' = 360p mp4 (always available on tv_embedded), fallback to any mp4 or best.
+                    'format': '18/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=720]/best',
                     'merge_output_format': 'mp4',
-                    # Sleep between requests to avoid rate limiting
                     'sleep_interval': 1,
                     'max_sleep_interval': 3,
-                    # Allow age-gated content
-                    'age_limit': None,
                 })
             import shutil
             import tempfile
@@ -323,35 +321,40 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                         download_error = "No video info extracted"
             except Exception as e:
                 download_error = str(e)
-                # YouTube fallback: if merging failed (no ffmpeg) or format not found,
-                # retry with a single-file format that doesn't require merging
+                # YouTube multi-client fallback chain for AWS/server environments.
+                # If one client is blocked, try the next one in sequence.
                 if platform == 'youtube' and (
-                    'ffmpeg' in download_error.lower() or
-                    'no video formats' in download_error.lower() or
                     'requested format' in download_error.lower() or
+                    'no video formats' in download_error.lower() or
+                    'ffmpeg' in download_error.lower() or
                     'sign in' in download_error.lower() or
-                    'confirm your age' in download_error.lower()
+                    'confirm your age' in download_error.lower() or
+                    'http error' in download_error.lower()
                 ):
-                    print(f"[YouTube] Primary format failed: {download_error[:80]}. Trying fallback format...")
-                    try:
-                        fallback_opts = dict(ydl_opts)
-                        fallback_opts['format'] = 'best[ext=mp4]/bestvideo[ext=mp4]/best'
-                        fallback_opts.pop('merge_output_format', None)
-                        # Try mweb client as additional fallback (lighter, less bot-detected)
-                        fallback_opts['extractor_args'] = {
-                            'youtube': {
-                                'player_client': ['android'],
+                    # Fallback clients to try in order
+                    fallback_clients = [
+                        ['web_embedded', 'android'],
+                        ['android_vr'],
+                        ['mweb'],
+                    ]
+                    for client_list in fallback_clients:
+                        print(f"[YouTube] Trying fallback client {client_list}...")
+                        try:
+                            fallback_opts = dict(ydl_opts)
+                            fallback_opts['format'] = '18/best[height<=480]/best'
+                            fallback_opts.pop('merge_output_format', None)
+                            fallback_opts['extractor_args'] = {
+                                'youtube': {'player_client': client_list}
                             }
-                        }
-                        with YoutubeDL(fallback_opts) as ydl2:
-                            info2 = ydl2.extract_info(url, download=True)
-                            if info2:
-                                download_success = True
-                                download_error = None
-                            else:
-                                download_error = "Fallback: No video info extracted"
-                    except Exception as e2:
-                        download_error = f"Primary: {download_error[:60]} | Fallback: {str(e2)[:60]}"
+                            with YoutubeDL(fallback_opts) as ydl2:
+                                info2 = ydl2.extract_info(url, download=True)
+                                if info2:
+                                    download_success = True
+                                    download_error = None
+                                    break
+                        except Exception as e2:
+                            download_error = f"All clients failed. Last: {str(e2)[:80]}"
+                            continue
             finally:
                 if temp_cookies_path and os.path.exists(temp_cookies_path):
                     # If download succeeded, write the updated cookies back to main file under lock.
