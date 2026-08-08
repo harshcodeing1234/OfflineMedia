@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OfflineMedia – My Scrapp</title>
+  <link rel="stylesheet" href="root.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='100%' style='stop-color:%23764ba2'/></linearGradient></defs><rect width='100' height='100' rx='16' fill='url(%23g)'/><path d='M35 25 L75 50 L35 75 Z' fill='%23fff'/></svg>">
   <link
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
@@ -1080,6 +1081,7 @@
     const DB_VERSION = 2;
     const STORE_NAME = 'videos';
     let dbInstance = null;
+    let localDownloads = {};
 
     function initDB() {
       return new Promise((resolve, reject) => {
@@ -1132,6 +1134,23 @@
         const request = store.put(video, video.filename);
         request.onsuccess = () => resolve();
         request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function checkVideoExistsInLocalDB(filename) {
+      return new Promise((resolve) => {
+        if (!dbInstance) return resolve(false);
+        try {
+          const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.getKey(filename);
+          request.onsuccess = (e) => {
+            resolve(e.target.result !== undefined);
+          };
+          request.onerror = () => resolve(false);
+        } catch (e) {
+          resolve(false);
+        }
       });
     }
 
@@ -1283,12 +1302,21 @@
         const downloadedScrapeIds = new Set(await getAllDownloadedScrapeIds());
 
         grid.innerHTML = scrapes.map((s, si) => {
+          const localProgress = localDownloads[s.id];
           const isScrapingOrDownloading = s.status === 'scraping' || s.status === 'downloading';
           const isCompleted = s.status === 'completed';
           const isStopped = s.status === 'stopped';
           
           let statusDisplay = '';
-          if (s.status === 'scraping') {
+          if (localProgress && localProgress.inProgress) {
+            statusDisplay = `
+              <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:6px; color:var(--accent);">
+                <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+              </svg>Local Saving: ${localProgress.downloaded}/${localProgress.total} saved (${localProgress.failed} failed)`;
+          } else if (s.status === 'scraping') {
             statusDisplay = `
               <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:6px;">
                 <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>
@@ -1332,7 +1360,14 @@
 
           // Progress bar
           let progressHTML = '';
-          if (isScrapingOrDownloading) {
+          if (localProgress && localProgress.inProgress) {
+            const pct = Math.round(((localProgress.downloaded + localProgress.failed) / localProgress.total) * 100) || 0;
+            progressHTML = `
+              <div class="progress-track" style="background: rgba(124, 58, 237, 0.15);">
+                <div class="progress-fill active" style="width: ${pct}%; background: var(--accent);"></div>
+              </div>
+            `;
+          } else if (isScrapingOrDownloading) {
             const pct = s.status === 'downloading' ? Math.round((s.downloaded_videos / s.total_videos) * 100) : (s.progress || 35);
             progressHTML = `
               <div class="progress-track">
@@ -1357,7 +1392,12 @@
 
           if (isCompleted) {
             const isDl = downloadedScrapeIds.has(s.id);
-            if (isDl) {
+            if (localProgress && localProgress.inProgress) {
+              actions += `
+                <button class="action-btn play-btn" style="background: var(--accent); opacity: 0.85; cursor: default;" disabled>
+                  <svg class="spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line></svg>${localProgress.statusText}
+                </button> `;
+            } else if (isDl) {
               actions += `
                 <button class="action-btn play-btn" style="background: #10b981; cursor: default;" disabled>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Downloaded
@@ -1434,13 +1474,51 @@
         
         const total = completedVids.length;
         let downloaded = 0;
+        let failed = 0;
+        
+        localDownloads[scrapeId] = {
+          total: total,
+          downloaded: downloaded,
+          failed: failed,
+          inProgress: true,
+          statusText: 'Connecting...'
+        };
+        await render();
         
         for (const video of completedVids) {
-          if (!video.filename) continue;
+          if (!video.filename) {
+            failed++;
+            localDownloads[scrapeId].failed = failed;
+            localDownloads[scrapeId].statusText = `Saving ${downloaded}/${total}` + (failed > 0 ? ` (${failed} err)` : `...`);
+            await render();
+            continue;
+          }
           
-          btn.textContent = `Saving ${downloaded}/${total}...`;
+          localDownloads[scrapeId].statusText = `Saving ${downloaded}/${total}` + (failed > 0 ? ` (${failed} err)` : `...`);
+          await render();
           
           try {
+            const exists = await checkVideoExistsInLocalDB(video.filename);
+            if (exists) {
+              downloaded++;
+              const metadata = {
+                id: video.id,
+                platform: video.platform,
+                filename: video.filename,
+                url: video.url,
+                likes: 0,
+                liked: false,
+                saved: false,
+                comment_count: 0,
+                scrape_id: scrapeId
+              };
+              await saveMetadataToLocalDB(metadata);
+              localDownloads[scrapeId].downloaded = downloaded;
+              localDownloads[scrapeId].statusText = `Saving ${downloaded}/${total}` + (failed > 0 ? ` (${failed} err)` : `...`);
+              await render();
+              continue;
+            }
+
             const videoRes = await fetch(`/cache/${video.filename}`);
             if (!videoRes.ok) throw new Error('Fetch failed');
             
@@ -1461,29 +1539,33 @@
             };
             await saveMetadataToLocalDB(metadata);
             downloaded++;
+            localDownloads[scrapeId].downloaded = downloaded;
           } catch (err) {
             console.error('Failed to download video file:', video.filename, err);
+            failed++;
+            localDownloads[scrapeId].failed = failed;
           }
+          localDownloads[scrapeId].statusText = `Saving ${downloaded}/${total}` + (failed > 0 ? ` (${failed} err)` : `...`);
+          await render();
         }
+        
+        localDownloads[scrapeId].inProgress = false;
         
         if (downloaded > 0) {
           await markScrapeAsDownloadedLocally(scrapeId);
-          btn.textContent = '✓ Downloaded';
-          btn.style.background = '#10b981'; // Green
           showToast(`Downloaded ${downloaded} videos locally! Ready for offline playing.`);
         } else {
           showToast('Failed to download videos.');
-          btn.disabled = false;
-          btn.style.pointerEvents = 'auto';
-          btn.textContent = '⬇ Download locally';
         }
+        await render();
         
       } catch (e) {
         console.error(e);
         showToast('Download failed');
-        btn.disabled = false;
-        btn.style.pointerEvents = 'auto';
-        btn.textContent = '⬇ Download locally';
+        if (localDownloads[scrapeId]) {
+          localDownloads[scrapeId].inProgress = false;
+        }
+        await render();
       }
     }
 
