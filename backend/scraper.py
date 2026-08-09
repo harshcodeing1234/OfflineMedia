@@ -7,6 +7,7 @@ import time
 import threading
 
 cookie_lock = threading.Lock()
+youtube_download_semaphore = threading.Semaphore(2)
 
 
 def safe_commit(db):
@@ -324,8 +325,12 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                     print(f"[Scraper] Failed to setup temp cookies: {ce}. Falling back to original.")
                     ydl_opts['cookiefile'] = cookies_path
             
+            if platform == 'youtube':
+                youtube_download_semaphore.acquire()
+
             try:
                 with YoutubeDL(ydl_opts) as ydl:
+                
                     info = ydl.extract_info(url, download=True)
                     if info:
                         download_success = True
@@ -367,6 +372,8 @@ def download_video_task(video_id, url, scrape_id, app, db, Video, Scrape, CACHE_
                             download_error = f"All clients failed. Last: {str(e2)[:80]}"
                             continue
             finally:
+                if platform == 'youtube':
+                    youtube_download_semaphore.release()
                 if temp_cookies_path and os.path.exists(temp_cookies_path):
                     # If download succeeded, write the updated cookies back to main file under lock.
                     # Never write back or modify selenium_cookies.txt via yt-dlp.
